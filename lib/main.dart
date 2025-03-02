@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter/services.dart'; // Для Clipboard
+import 'package:url_launcher/url_launcher.dart'; // Для launch
 
 void main() {
   runApp(const MyApp());
@@ -72,10 +74,11 @@ class AppLocalizations {
       'squats': 'Squats',
       'pushups': 'Pushups',
       'legpress': 'Legpress',
-      'welcomeText': 'Welcome! This tool will help you track your performance in physical exercises such as push-ups, squats, and leg presses using the YOLO neural network. Ready to train?',
+      'welcomeText': 'Welcome! This tool will help you track your performance in physical exercises such as push-ups, squats, and leg presses using the YOLO neural network. Ready to train? :)',
+      'email': 'posehelapp@gmail.com',
     },
     'ru': {
-      'title': 'Умное отслеживание тренировок',
+      'title': 'Умный трекер тренировок',
       'start': 'Начать',
       'help': 'Помощь',
       'changeLanguage': 'Изменить язык',
@@ -87,7 +90,8 @@ class AppLocalizations {
       'squats': 'Приседания',
       'pushups': 'Отжимания',
       'legpress': 'Жим ногами',
-      'welcomeText': 'Добро пожаловать! Этот инструмент поможет отслеживать ваше выполнение таких физических упражнений, как отжимания, приседания и жим ногами с помощью нейросети YOLO. Готовы к тренировке?',
+      'welcomeText': 'Добро пожаловать! Этот инструмент поможет отслеживать ваше выполнение таких физических упражнений, как отжимания, приседания и жим ногами, с помощью нейросети YOLO. Готовы к тренировке?)',
+      'email': 'posehelapp@gmail.com',
     },
     'zh': {
       'title': '智能锻炼跟踪',
@@ -103,6 +107,7 @@ class AppLocalizations {
       'pushups': '俯卧撑',
       'legpress': '腿举',
       'welcomeText': '欢迎！这个工具将帮助您使用YOLO神经网络跟踪俯卧撑、深蹲和腿举等体育锻炼的表现。准备好训练了吗？',
+      'email': 'posehelapp@gmail.com',
     },
   };
 
@@ -119,6 +124,7 @@ class AppLocalizations {
   String? get pushups => _localizedValues[locale.languageCode]?['pushups'];
   String? get legpress => _localizedValues[locale.languageCode]?['legpress'];
   String? get welcomeText => _localizedValues[locale.languageCode]?['welcomeText'];
+  String? get email => _localizedValues[locale.languageCode]?['email'];
 }
 
 class AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
@@ -137,6 +143,117 @@ class AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
   @override
   bool shouldReload(AppLocalizationsDelegate old) => false;
 }
+
+// class FirstRoute extends StatelessWidget {
+//   const FirstRoute({super.key});
+
+//   void _showAction(BuildContext context, int index) {
+//     final actionTitles = [
+//       AppLocalizations.of(context)!.help,
+//       AppLocalizations.of(context)!.changeLanguage,
+//       AppLocalizations.of(context)!.getInformation,
+//     ];
+//     showDialog<void>(
+//       context: context,
+//       builder: (context) {
+//         return AlertDialog(
+//           content: Text(actionTitles[index]!),
+//           actions: [
+//             TextButton(
+//               onPressed: () => Navigator.of(context).pop(),
+//               child: Text(AppLocalizations.of(context)!.close!),
+//             ),
+//           ],
+//         );
+//       },
+//     );
+//   }
+
+//   void _changeLanguage(BuildContext context) {
+//     showDialog<void>(
+//       context: context,
+//       builder: (context) {
+//         return AlertDialog(
+//           title: Text(AppLocalizations.of(context)!.changeLanguage!),
+//           content: Column(
+//             mainAxisSize: MainAxisSize.min,
+//             children: [
+//               ListTile(
+//                 title: const Text('English'),
+//                 onTap: () {
+//                   MyApp.setLocale(context, const Locale('en'));
+//                   Navigator.of(context).pop();
+//                 },
+//               ),
+//               ListTile(
+//                 title: const Text('Русский'),
+//                 onTap: () {
+//                   MyApp.setLocale(context, const Locale('ru'));
+//                   Navigator.of(context).pop();
+//                 },
+//               ),
+//               ListTile(
+//                 title: const Text('中文'),
+//                 onTap: () {
+//                   MyApp.setLocale(context, const Locale('zh'));
+//                   Navigator.of(context).pop();
+//                 },
+//               ),
+//             ],
+//           ),
+//         );
+//       },
+//     );
+//   }
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       appBar: AppBar(title: Text(AppLocalizations.of(context)!.title!)),
+//       body: Padding(
+//         padding: const EdgeInsets.all(16.0),
+//         child: Column(
+//           crossAxisAlignment: CrossAxisAlignment.start, // Выравнивание по левому краю
+//           children: [
+//             Text(
+//               AppLocalizations.of(context)!.welcomeText!,
+//               style: const TextStyle(fontSize: 20),
+//             ),
+//             const SizedBox(height: 120), // Отступ между текстом и кнопкой
+//             Center(
+//               child: ElevatedButton(
+//                 child: Text(AppLocalizations.of(context)!.start!, style: const TextStyle(fontSize: 24)),
+//                 onPressed: () {
+//                   Navigator.push(
+//                     context,
+//                     MaterialPageRoute(builder: (context) => const SecondRoute()),
+//                   );
+//                 },
+//               ),
+//             ),
+//           ],
+//         ),
+//       ),
+//       floatingActionButton: ExpandableFab(
+//         distance: 112,
+//         children: [
+//           ActionButton(
+//             onPressed: () => _showAction(context, 0),
+//             icon: const Icon(Icons.help_outline),
+//           ),
+//           ActionButton(
+//             onPressed: () => _changeLanguage(context),
+//             icon: const Icon(Icons.language),
+//           ),
+//           ActionButton(
+//             onPressed: () => _showAction(context, 2),
+//             icon: const Icon(Icons.mail_outline),
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+// }
 
 class FirstRoute extends StatelessWidget {
   const FirstRoute({super.key});
@@ -200,6 +317,69 @@ class FirstRoute extends StatelessWidget {
     );
   }
 
+  void _showEmailDialog(BuildContext context) {
+  final email = AppLocalizations.of(context)!.email!;
+  showDialog<void>(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: Text(AppLocalizations.of(context)!.getInformation!),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Email: $email'),
+            const SizedBox(height: 10),
+            GestureDetector(
+              onTap: () async {
+                // Копируем email в буфер обмена
+                await Clipboard.setData(ClipboardData(text: email));
+
+                // Проверяем, что виджет все еще "смонтирован"
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Email copied: $email')),
+                  );
+                }
+
+                // Открываем почтовый клиент
+                final Uri emailUri = Uri(
+                  scheme: 'mailto',
+                  path: email,
+                );
+                // Используем canLaunchUrl вместо canLaunch
+                if (await canLaunchUrl(emailUri)) {
+                  // Используем launchUrl вместо launch
+                  await launchUrl(emailUri);
+                } else {
+                  // Проверяем, что виджет все еще "смонтирован"
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Could not launch email client')),
+                    );
+                  }
+                }
+              },
+              child: Text(
+                email,
+                style: const TextStyle(
+                  color: Colors.blue,
+                  decoration: TextDecoration.underline,
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(AppLocalizations.of(context)!.close!),
+          ),
+        ],
+      );
+    },
+  );
+}
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -207,13 +387,13 @@ class FirstRoute extends StatelessWidget {
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start, // Выравнивание по левому краю
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               AppLocalizations.of(context)!.welcomeText!,
-              style: const TextStyle(fontSize: 20),
+              style: const TextStyle(fontSize: 16),
             ),
-            const SizedBox(height: 120), // Отступ между текстом и кнопкой
+            const SizedBox(height: 20),
             Center(
               child: ElevatedButton(
                 child: Text(AppLocalizations.of(context)!.start!, style: const TextStyle(fontSize: 24)),
@@ -240,7 +420,7 @@ class FirstRoute extends StatelessWidget {
             icon: const Icon(Icons.language),
           ),
           ActionButton(
-            onPressed: () => _showAction(context, 2),
+            onPressed: () => _showEmailDialog(context),
             icon: const Icon(Icons.mail_outline),
           ),
         ],
@@ -248,6 +428,8 @@ class FirstRoute extends StatelessWidget {
     );
   }
 }
+
+
 
 class SecondRoute extends StatefulWidget {
   const SecondRoute({super.key});
