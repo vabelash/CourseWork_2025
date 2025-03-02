@@ -60,7 +60,7 @@ class AppLocalizations {
 
   static final Map<String, Map<String, String>> _localizedValues = {
     'en': {
-      'title': 'First Route',
+      'title': 'Smart Workout Tracking',
       'start': 'Start',
       'help': 'Help',
       'changeLanguage': 'Change the language',
@@ -72,9 +72,10 @@ class AppLocalizations {
       'squats': 'Squats',
       'pushups': 'Pushups',
       'legpress': 'Legpress',
+      'welcomeText': 'Welcome! This tool will help you track your performance in physical exercises such as push-ups, squats, and leg presses using the YOLO neural network. Ready to train?',
     },
     'ru': {
-      'title': 'Первый маршрут',
+      'title': 'Умное отслеживание тренировок',
       'start': 'Начать',
       'help': 'Помощь',
       'changeLanguage': 'Изменить язык',
@@ -86,9 +87,10 @@ class AppLocalizations {
       'squats': 'Приседания',
       'pushups': 'Отжимания',
       'legpress': 'Жим ногами',
+      'welcomeText': 'Добро пожаловать! Этот инструмент поможет отслеживать ваше выполнение таких физических упражнений, как отжимания, приседания и жим ногами с помощью нейросети YOLO. Готовы к тренировке?',
     },
     'zh': {
-      'title': '第一路由',
+      'title': '智能锻炼跟踪',
       'start': '开始',
       'help': '帮助',
       'changeLanguage': '更改语言',
@@ -100,6 +102,7 @@ class AppLocalizations {
       'squats': '深蹲',
       'pushups': '俯卧撑',
       'legpress': '腿举',
+      'welcomeText': '欢迎！这个工具将帮助您使用YOLO神经网络跟踪俯卧撑、深蹲和腿举等体育锻炼的表现。准备好训练了吗？',
     },
   };
 
@@ -115,6 +118,7 @@ class AppLocalizations {
   String? get squats => _localizedValues[locale.languageCode]?['squats'];
   String? get pushups => _localizedValues[locale.languageCode]?['pushups'];
   String? get legpress => _localizedValues[locale.languageCode]?['legpress'];
+  String? get welcomeText => _localizedValues[locale.languageCode]?['welcomeText'];
 }
 
 class AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
@@ -200,15 +204,28 @@ class FirstRoute extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(AppLocalizations.of(context)!.title!)),
-      body: Center(
-        child: ElevatedButton(
-          child: Text(AppLocalizations.of(context)!.start!, style: const TextStyle(fontSize: 24)),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const SecondRoute()),
-            );
-          },
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start, // Выравнивание по левому краю
+          children: [
+            Text(
+              AppLocalizations.of(context)!.welcomeText!,
+              style: const TextStyle(fontSize: 20),
+            ),
+            const SizedBox(height: 120), // Отступ между текстом и кнопкой
+            Center(
+              child: ElevatedButton(
+                child: Text(AppLocalizations.of(context)!.start!, style: const TextStyle(fontSize: 24)),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const SecondRoute()),
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
       floatingActionButton: ExpandableFab(
