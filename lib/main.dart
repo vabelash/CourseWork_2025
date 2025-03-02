@@ -15,7 +15,7 @@ class MyApp extends StatefulWidget {
   }
 
   @override
-  MyAppState createState() => MyAppState(); 
+  MyAppState createState() => MyAppState();
 }
 
 class MyAppState extends State<MyApp> {
@@ -69,7 +69,9 @@ class AppLocalizations {
       'chooseExercise': 'Choose an exercise',
       'startWorkout': 'Start my workout',
       'finishWorkout': 'Finish my workout',
-      
+      'squats': 'Squats',
+      'pushups': 'Pushups',
+      'legpress': 'Legpress',
     },
     'ru': {
       'title': 'Первый маршрут',
@@ -81,6 +83,9 @@ class AppLocalizations {
       'chooseExercise': 'Выберите упражнение',
       'startWorkout': 'Начать тренировку',
       'finishWorkout': 'Завершить тренировку',
+      'squats': 'Приседания',
+      'pushups': 'Отжимания',
+      'legpress': 'Жим ногами',
     },
     'zh': {
       'title': '第一路由',
@@ -92,6 +97,9 @@ class AppLocalizations {
       'chooseExercise': '选择一个练习',
       'startWorkout': '开始我的锻炼',
       'finishWorkout': '完成我的锻炼',
+      'squats': '深蹲',
+      'pushups': '俯卧撑',
+      'legpress': '腿举',
     },
   };
 
@@ -104,6 +112,9 @@ class AppLocalizations {
   String? get chooseExercise => _localizedValues[locale.languageCode]?['chooseExercise'];
   String? get startWorkout => _localizedValues[locale.languageCode]?['startWorkout'];
   String? get finishWorkout => _localizedValues[locale.languageCode]?['finishWorkout'];
+  String? get squats => _localizedValues[locale.languageCode]?['squats'];
+  String? get pushups => _localizedValues[locale.languageCode]?['pushups'];
+  String? get legpress => _localizedValues[locale.languageCode]?['legpress'];
 }
 
 class AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
@@ -122,7 +133,6 @@ class AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
   @override
   bool shouldReload(AppLocalizationsDelegate old) => false;
 }
-
 
 class FirstRoute extends StatelessWidget {
   const FirstRoute({super.key});
@@ -230,9 +240,32 @@ class SecondRoute extends StatefulWidget {
 }
 
 class _SecondRouteState extends State<SecondRoute> {
-  final List<String> _exercises = ['Squats', 'Pushups', 'Legpress'];
+  late List<String> _exercises;
   String _exercise = 'Pushups';
   bool _isWorkoutStarted = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _updateExercises();
+  }
+
+  void _updateExercises() {
+    final appLocalizations = AppLocalizations.of(context)!;
+    setState(() {
+      _exercises = [
+        appLocalizations.squats!,
+        appLocalizations.pushups!,
+        appLocalizations.legpress!,
+      ];
+      // Обновляем выбранное упражнение, если оно есть в новом списке
+      if (_exercises.contains(_exercise)) {
+        _exercise = _exercise;
+      } else {
+        _exercise = _exercises.first;
+      }
+    });
+  }
 
   void _toggleWorkout() {
     setState(() {
