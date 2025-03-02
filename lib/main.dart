@@ -1,26 +1,186 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 void main() {
-  runApp(const MaterialApp(title: 'Navigation Basics', home: FirstRoute()));
+  runApp(const MyApp());
 }
+
+class MyApp extends StatefulWidget {
+  const MyApp({super.key});
+
+  static void setLocale(BuildContext context, Locale newLocale) {
+    MyAppState? state = context.findAncestorStateOfType<MyAppState>();
+    state?.setLocale(newLocale);
+  }
+
+  @override
+  MyAppState createState() => MyAppState(); 
+}
+
+class MyAppState extends State<MyApp> {
+  Locale? _locale;
+
+  void setLocale(Locale locale) {
+    setState(() {
+      _locale = locale;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Navigation Basics',
+      locale: _locale,
+      localizationsDelegates: [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ],
+      supportedLocales: [
+        const Locale('en', ''),
+        const Locale('ru', ''),
+        const Locale('zh', ''),
+      ],
+      home: const FirstRoute(),
+    );
+  }
+}
+
+class AppLocalizations {
+  final Locale locale;
+
+  AppLocalizations(this.locale);
+
+  static AppLocalizations? of(BuildContext context) {
+    return Localizations.of<AppLocalizations>(context, AppLocalizations);
+  }
+
+  static const LocalizationsDelegate<AppLocalizations> delegate = AppLocalizationsDelegate();
+
+  static final Map<String, Map<String, String>> _localizedValues = {
+    'en': {
+      'title': 'First Route',
+      'start': 'Start',
+      'help': 'Help',
+      'changeLanguage': 'Change the language',
+      'getInformation': 'Get information',
+      'close': 'CLOSE',
+      'chooseExercise': 'Choose an exercise',
+      'startWorkout': 'Start my workout',
+      'finishWorkout': 'Finish my workout',
+      
+    },
+    'ru': {
+      'title': 'Первый маршрут',
+      'start': 'Начать',
+      'help': 'Помощь',
+      'changeLanguage': 'Изменить язык',
+      'getInformation': 'Получить информацию',
+      'close': 'ЗАКРЫТЬ',
+      'chooseExercise': 'Выберите упражнение',
+      'startWorkout': 'Начать тренировку',
+      'finishWorkout': 'Завершить тренировку',
+    },
+    'zh': {
+      'title': '第一路由',
+      'start': '开始',
+      'help': '帮助',
+      'changeLanguage': '更改语言',
+      'getInformation': '获取信息',
+      'close': '关闭',
+      'chooseExercise': '选择一个练习',
+      'startWorkout': '开始我的锻炼',
+      'finishWorkout': '完成我的锻炼',
+    },
+  };
+
+  String? get title => _localizedValues[locale.languageCode]?['title'];
+  String? get start => _localizedValues[locale.languageCode]?['start'];
+  String? get help => _localizedValues[locale.languageCode]?['help'];
+  String? get changeLanguage => _localizedValues[locale.languageCode]?['changeLanguage'];
+  String? get getInformation => _localizedValues[locale.languageCode]?['getInformation'];
+  String? get close => _localizedValues[locale.languageCode]?['close'];
+  String? get chooseExercise => _localizedValues[locale.languageCode]?['chooseExercise'];
+  String? get startWorkout => _localizedValues[locale.languageCode]?['startWorkout'];
+  String? get finishWorkout => _localizedValues[locale.languageCode]?['finishWorkout'];
+}
+
+class AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
+  const AppLocalizationsDelegate();
+
+  @override
+  bool isSupported(Locale locale) {
+    return ['en', 'ru', 'zh'].contains(locale.languageCode);
+  }
+
+  @override
+  Future<AppLocalizations> load(Locale locale) async {
+    return AppLocalizations(locale);
+  }
+
+  @override
+  bool shouldReload(AppLocalizationsDelegate old) => false;
+}
+
 
 class FirstRoute extends StatelessWidget {
   const FirstRoute({super.key});
 
   void _showAction(BuildContext context, int index) {
-    final actionTitles = ['Help', 'Change the language', 'Get information'];
+    final actionTitles = [
+      AppLocalizations.of(context)!.help,
+      AppLocalizations.of(context)!.changeLanguage,
+      AppLocalizations.of(context)!.getInformation,
+    ];
     showDialog<void>(
       context: context,
       builder: (context) {
         return AlertDialog(
-          content: Text(actionTitles[index]),
+          content: Text(actionTitles[index]!),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('CLOSE'),
+              child: Text(AppLocalizations.of(context)!.close!),
             ),
           ],
+        );
+      },
+    );
+  }
+
+  void _changeLanguage(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(AppLocalizations.of(context)!.changeLanguage!),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                title: const Text('English'),
+                onTap: () {
+                  MyApp.setLocale(context, const Locale('en'));
+                  Navigator.of(context).pop();
+                },
+              ),
+              ListTile(
+                title: const Text('Русский'),
+                onTap: () {
+                  MyApp.setLocale(context, const Locale('ru'));
+                  Navigator.of(context).pop();
+                },
+              ),
+              ListTile(
+                title: const Text('中文'),
+                onTap: () {
+                  MyApp.setLocale(context, const Locale('zh'));
+                  Navigator.of(context).pop();
+                },
+              ),
+            ],
+          ),
         );
       },
     );
@@ -29,10 +189,10 @@ class FirstRoute extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('First Route')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context)!.title!)),
       body: Center(
         child: ElevatedButton(
-          child: const Text('Start', style: TextStyle(fontSize: 24)),
+          child: Text(AppLocalizations.of(context)!.start!, style: const TextStyle(fontSize: 24)),
           onPressed: () {
             Navigator.push(
               context,
@@ -49,7 +209,7 @@ class FirstRoute extends StatelessWidget {
             icon: const Icon(Icons.help_outline),
           ),
           ActionButton(
-            onPressed: () => _showAction(context, 1),
+            onPressed: () => _changeLanguage(context),
             icon: const Icon(Icons.language),
           ),
           ActionButton(
@@ -105,7 +265,7 @@ class _SecondRouteState extends State<SecondRoute> {
                     borderRadius: BorderRadius.circular(10),
                     borderSide: const BorderSide(color: Color.fromARGB(255, 198, 157, 252), width: 2.5),
                   ),
-                  labelText: 'Choose an exercise',
+                  labelText: AppLocalizations.of(context)!.chooseExercise,
                   labelStyle: Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 18),
                 ),
                 items: _exercises
@@ -137,7 +297,7 @@ class _SecondRouteState extends State<SecondRoute> {
                   padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                 ),
                 child: Text(
-                  _isWorkoutStarted ? 'Finish my workout' : 'Start my workout',
+                  _isWorkoutStarted ? AppLocalizations.of(context)!.finishWorkout! : AppLocalizations.of(context)!.startWorkout!,
                   style: const TextStyle(fontSize: 18),
                 ),
               ),
@@ -166,8 +326,7 @@ class ExpandableFab extends StatefulWidget {
   State<ExpandableFab> createState() => _ExpandableFabState();
 }
 
-class _ExpandableFabState extends State<ExpandableFab>
-    with SingleTickerProviderStateMixin {
+class _ExpandableFabState extends State<ExpandableFab> with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _expandAnimation;
   bool _open = false;
