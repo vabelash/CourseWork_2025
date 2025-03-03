@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter/services.dart'; // Для Clipboard
 import 'package:url_launcher/url_launcher.dart'; // Для launch
+import 'package:video_player/video_player.dart';
 
 void main() {
   runApp(const MyApp());
@@ -77,6 +78,7 @@ class AppLocalizations {
       'welcomeText': 'Welcome! This tool will help you track your performance in physical exercises such as push-ups, squats, and leg presses using the YOLO neural network. Ready to train? :)',
       'emailMessage': 'If you have any questions, you can contact us by the official e-mail:',
       'emailCopy': 'E-mail copied',
+      'helpOpen': 'Open the "User Guide"',
     },
     'ru': {
       'title': 'Умный трекер тренировок',
@@ -94,6 +96,7 @@ class AppLocalizations {
       'welcomeText': 'Добро пожаловать! Этот инструмент поможет отслеживать ваше выполнение таких физических упражнений, как отжимания, приседания и жим ногами, с помощью нейросети YOLO. Готовы к тренировке?)',
       'emailMessage': 'Если у вас возникли какие-либо вопросы, можете обратиться по официальному e-mail:',
       'emailCopy': 'E-mail скопирован',
+      'helpOpen': 'Открыть "Руководство пользователя"',
     },
     'zh': {
       'title': '智能锻炼跟踪',
@@ -111,6 +114,7 @@ class AppLocalizations {
       'welcomeText': '欢迎！这个工具将帮助您使用YOLO神经网络跟踪俯卧撑、深蹲和腿举等体育锻炼的表现。准备好训练了吗？',
       'emailMessage': '如果您有任何问题，您可以通过官方电子邮件与我们联系:',
       'emailCopy': 'E-mail 复制的',
+      'helpOpen': '打开"用户指南"',
     },
   };
 
@@ -129,6 +133,7 @@ class AppLocalizations {
   String? get welcomeText => _localizedValues[locale.languageCode]?['welcomeText'];
   String? get emailMessage => _localizedValues[locale.languageCode]?['emailMessage'];
   String? get emailCopy => _localizedValues[locale.languageCode]?['emailCopy'];
+  String? get helpOpen => _localizedValues[locale.languageCode]?['helpOpen'];
 }
 
 class AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
@@ -151,28 +156,7 @@ class AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
 class FirstRoute extends StatelessWidget {
   const FirstRoute({super.key});
 
-  void _showAction(BuildContext context, int index) {
-    final actionTitles = [
-      AppLocalizations.of(context)!.help,
-      AppLocalizations.of(context)!.changeLanguage,
-      AppLocalizations.of(context)!.getInformation,
-    ];
-    showDialog<void>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          content: Text(actionTitles[index]!),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(AppLocalizations.of(context)!.close!),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
+  
   void _changeLanguage(BuildContext context) {
     showDialog<void>(
       context: context,
@@ -209,6 +193,28 @@ class FirstRoute extends StatelessWidget {
       },
     );
   }
+
+// void _showAction(BuildContext context, int index) {
+//     final actionTitles = [
+//       AppLocalizations.of(context)!.help,
+//       AppLocalizations.of(context)!.changeLanguage,
+//       AppLocalizations.of(context)!.getInformation,
+//     ];
+//     showDialog<void>(
+//       context: context,
+//       builder: (context) {
+//         return AlertDialog(
+//           content: Text(actionTitles[index]!),
+//           actions: [
+//             TextButton(
+//               onPressed: () => Navigator.of(context).pop(),
+//               child: Text(AppLocalizations.of(context)!.close!),
+//             ),
+//           ],
+//         );
+//       },
+//     );
+//   }
 
   void _showEmailDialog(BuildContext context) {
   final emailMessage = AppLocalizations.of(context)!.emailMessage!;
@@ -275,23 +281,88 @@ class FirstRoute extends StatelessWidget {
   );
 }
 
+void _showHelpDialog(BuildContext context) {
+  final help = AppLocalizations.of(context)!.help!;
+  final helpOpen = AppLocalizations.of(context)!.helpOpen!;
+    showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(help),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Видео
+              SizedBox(
+                width: 300,
+                height: 200,
+                child: VideoPlayerWidget(),
+              ),
+              const SizedBox(height: 20),
+              // Ссылка для открытия PDF
+              GestureDetector(
+                onTap: () async {
+                  // Открываем PDF в браузере
+                  final Uri pdfUri = Uri.parse(
+                      'https://drive.google.com/file/d/1Z7gJbI0JlDELvG0xJvQ22kFfuFK9eb2g/view?usp=sharing'); // Замените на реальный URL
+                  if (await canLaunchUrl(pdfUri)) {
+                    await launchUrl(pdfUri);
+                  } else {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                            content: Text('Не удалось открыть PDF')),
+                      );
+                    }
+                  }
+                },
+                child: Text(
+                  helpOpen,
+                  style: TextStyle(
+                    color: Colors.blue,
+                    decoration: TextDecoration.underline,
+                  ),
+                  textAlign: TextAlign.left,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(AppLocalizations.of(context)!.close!),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(AppLocalizations.of(context)!.title!)),
+      appBar: AppBar(title: Text(AppLocalizations.of(context)!.title!,
+                      style: TextStyle(
+                      fontSize: 24,
+                      color: const Color.fromARGB(255, 161, 90, 254),
+                      fontWeight: FontWeight.bold,
+                    ),
+                    )
+                    ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               AppLocalizations.of(context)!.welcomeText!,
-              style: const TextStyle(fontSize: 16),
+              style: const TextStyle(fontSize: 20),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 40),
             Center(
               child: ElevatedButton(
-                child: Text(AppLocalizations.of(context)!.start!, style: const TextStyle(fontSize: 24)),
+                child: Text(AppLocalizations.of(context)!.start!, style: const TextStyle(fontSize: 26)),
                 onPressed: () {
                   Navigator.push(
                     context,
@@ -307,7 +378,7 @@ class FirstRoute extends StatelessWidget {
         distance: 112,
         children: [
           ActionButton(
-            onPressed: () => _showAction(context, 0),
+            onPressed: () => _showHelpDialog(context),
             icon: const Icon(Icons.help_outline),
           ),
           ActionButton(
@@ -324,7 +395,44 @@ class FirstRoute extends StatelessWidget {
   }
 }
 
+// Виджет для воспроизведения видео
+class VideoPlayerWidget extends StatefulWidget {
+  const VideoPlayerWidget({super.key});
 
+  @override
+  VideoPlayerWidgetState createState() => VideoPlayerWidgetState();
+}
+
+class VideoPlayerWidgetState extends State<VideoPlayerWidget> {
+  late VideoPlayerController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = VideoPlayerController.asset('assets/trainHelpVideo.mp4')
+      ..initialize().then((_) {
+        setState(() {}); // Обновляем состояние после инициализации
+      });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _controller.value.isInitialized
+        ? AspectRatio(
+            aspectRatio: _controller.value.aspectRatio,
+            child: VideoPlayer(_controller),
+          )
+        : const Center(child: CircularProgressIndicator());
+  }
+}
+
+///Основная страница
 
 class SecondRoute extends StatefulWidget {
   const SecondRoute({super.key});
