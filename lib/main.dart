@@ -3,7 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter/services.dart'; // Для Clipboard
 import 'package:url_launcher/url_launcher.dart'; // Для launch
-import 'package:video_player/video_player.dart';
+// import 'package:video_player/video_player.dart';
+// import 'package:flutter_gifimage/flutter_gifimage.dart';
+// import 'package:camera/camera.dart';
+// import 'package:tflite_flutter/tflite_flutter.dart';
+// import 'dart:ui' as ui;
 
 void main() {
   runApp(const MyApp());
@@ -194,27 +198,6 @@ class FirstRoute extends StatelessWidget {
     );
   }
 
-// void _showAction(BuildContext context, int index) {
-//     final actionTitles = [
-//       AppLocalizations.of(context)!.help,
-//       AppLocalizations.of(context)!.changeLanguage,
-//       AppLocalizations.of(context)!.getInformation,
-//     ];
-//     showDialog<void>(
-//       context: context,
-//       builder: (context) {
-//         return AlertDialog(
-//           content: Text(actionTitles[index]!),
-//           actions: [
-//             TextButton(
-//               onPressed: () => Navigator.of(context).pop(),
-//               child: Text(AppLocalizations.of(context)!.close!),
-//             ),
-//           ],
-//         );
-//       },
-//     );
-//   }
 
   void _showEmailDialog(BuildContext context) {
   final emailMessage = AppLocalizations.of(context)!.emailMessage!;
@@ -281,62 +264,65 @@ class FirstRoute extends StatelessWidget {
   );
 }
 
-void _showHelpDialog(BuildContext context) {
-  final help = AppLocalizations.of(context)!.help!;
-  final helpOpen = AppLocalizations.of(context)!.helpOpen!;
-    showDialog<void>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text(help),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Видео
-              SizedBox(
-                width: 300,
-                height: 200,
-                child: VideoPlayerWidget(),
-              ),
-              const SizedBox(height: 20),
-              // Ссылка для открытия PDF
-              GestureDetector(
-                onTap: () async {
-                  // Открываем PDF в браузере
-                  final Uri pdfUri = Uri.parse(
-                      'https://drive.google.com/file/d/1Z7gJbI0JlDELvG0xJvQ22kFfuFK9eb2g/view?usp=sharing'); // Замените на реальный URL
-                  if (await canLaunchUrl(pdfUri)) {
-                    await launchUrl(pdfUri);
-                  } else {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text('Не удалось открыть PDF')),
-                      );
-                    }
-                  }
-                },
-                child: Text(
-                  helpOpen,
-                  style: TextStyle(
-                    color: Colors.blue,
-                    decoration: TextDecoration.underline,
+  void _showHelpDialog(BuildContext context) {
+    final help = AppLocalizations.of(context)!.help!;
+    final helpOpen = AppLocalizations.of(context)!.helpOpen!;
+      showDialog<void>(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: Text(help),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                 SizedBox(
+                    width: 300,
+                    height: 200,
+                    child: Image.asset(
+                      'assets/trainGif.gif',
+                      fit: BoxFit.cover,
+                    ),
                   ),
-                  textAlign: TextAlign.left,
+                const SizedBox(height: 20),
+                // Ссылка для открытия PDF
+                GestureDetector(
+                  onTap: () async {
+                    // Открываем PDF в браузере
+                    final Uri pdfUri = Uri.parse(
+                        'https://drive.google.com/file/d/1Z7gJbI0JlDELvG0xJvQ22kFfuFK9eb2g/view?usp=sharing'); // Замените на реальный URL
+                    if (await canLaunchUrl(pdfUri)) {
+                      await launchUrl(pdfUri);
+                    } else {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                              content: Text('Не удалось открыть PDF')),
+                        );
+                      }
+                    }
+                  },
+                  child: Text(
+                    helpOpen,
+                    style: TextStyle(
+                      color: Colors.blue,
+                      decoration: TextDecoration.underline,
+                      fontSize: 18,
+                    ),
+                    textAlign: TextAlign.left,
+                  ),
                 ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(AppLocalizations.of(context)!.close!),
               ),
             ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(AppLocalizations.of(context)!.close!),
-            ),
-          ],
-        );
-      },
-    );
-  }
+          );
+        },
+      );
+    }
 
 
   @override
@@ -345,8 +331,15 @@ void _showHelpDialog(BuildContext context) {
       appBar: AppBar(title: Text(AppLocalizations.of(context)!.title!,
                       style: TextStyle(
                       fontSize: 24,
-                      color: const Color.fromARGB(255, 161, 90, 254),
+                      color: const Color.fromARGB(255, 0, 0, 0),
                       fontWeight: FontWeight.bold,
+                      shadows: [
+                      Shadow(
+                        blurRadius: 5.0,
+                        color: const Color.fromARGB(255, 197, 179, 220).withValues(),
+                        offset: Offset(2.0, 2.0),
+                      ),
+                    ],
                     ),
                     )
                     ),
@@ -392,43 +385,6 @@ void _showHelpDialog(BuildContext context) {
         ],
       ),
     );
-  }
-}
-
-// Виджет для воспроизведения видео
-class VideoPlayerWidget extends StatefulWidget {
-  const VideoPlayerWidget({super.key});
-
-  @override
-  VideoPlayerWidgetState createState() => VideoPlayerWidgetState();
-}
-
-class VideoPlayerWidgetState extends State<VideoPlayerWidget> {
-  late VideoPlayerController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = VideoPlayerController.asset('assets/trainHelpVideo.mp4')
-      ..initialize().then((_) {
-        setState(() {}); // Обновляем состояние после инициализации
-      });
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return _controller.value.isInitialized
-        ? AspectRatio(
-            aspectRatio: _controller.value.aspectRatio,
-            child: VideoPlayer(_controller),
-          )
-        : const Center(child: CircularProgressIndicator());
   }
 }
 
@@ -743,3 +699,328 @@ class ActionButton extends StatelessWidget {
     );
   }
 }
+
+
+// class SecondRoute extends StatefulWidget {
+//   const SecondRoute({super.key});
+
+//   @override
+//   State<SecondRoute> createState() => _SecondRouteState();
+// }
+
+
+// class _SecondRouteState extends State<SecondRoute> {
+//   late List<String> _exercises;
+//   String _exercise = 'Pushups';
+//   bool _isWorkoutStarted = false;
+
+//   // Индексы ключевых точек
+//   List<int> _kpts = [5, 7, 9]; // По умолчанию для Push-ups
+
+//   // Камера
+//   late CameraController _cameraController;
+//   late Future<void> _initializeCameraFuture;
+
+//   // TFLite
+//   late Interpreter _interpreter;
+//   bool _isModelLoaded = false;
+
+//   // Ключевые точки
+//   List<Offset> _keypoints = [];
+
+//   @override
+//   void initState() {
+//     super.initState();
+//     _updateExercises();
+//     _initializeCamera();
+//     _loadModel();
+//   }
+
+//   void _updateExercises() {
+//     final appLocalizations = AppLocalizations.of(context)!;
+//     setState(() {
+//       _exercises = [
+//         appLocalizations.squats!,
+//         appLocalizations.pushups!,
+//         appLocalizations.legpress!,
+//       ];
+//       if (_exercises.contains(_exercise)) {
+//         _exercise = _exercise;
+//       } else {
+//         _exercise = _exercises.first;
+//       }
+
+//       // Обновляем индексы ключевых точек в зависимости от выбранного упражнения
+//       switch (_exercise) {
+//         case 'Pushups':
+//           _kpts = [5, 7, 9];
+//           break;
+//         case 'Squats':
+//           _kpts = [5, 11, 13];
+//           break;
+//         case 'Legpress':
+//           _kpts = [11, 13, 15];
+//           break;
+//         default:
+//           _kpts = [5, 7, 9]; // По умолчанию для Push-ups
+//       }
+//     });
+//   }
+
+//   void _toggleWorkout() {
+//     setState(() {
+//       _isWorkoutStarted = !_isWorkoutStarted;
+//     });
+
+//     // Управление видеопотоком
+//     if (_isWorkoutStarted) {
+//       _startVideoStream();
+//     } else {
+//       _stopVideoStream();
+//     }
+//   }
+
+//   // Запуск видеопотока
+//   void _startVideoStream() async {
+//     if (!_cameraController.value.isStreamingImages) {
+//       await _cameraController.startImageStream((CameraImage img) {
+//         if (_isModelLoaded) {
+//           _processCameraImage(img);
+//         }
+//       });
+//     }
+//   }
+
+//   // Остановка видеопотока
+//   void _stopVideoStream() async {
+//     if (_cameraController.value.isStreamingImages) {
+//       await _cameraController.stopImageStream();
+//     }
+//   }
+
+//   // Инициализация камеры
+//   void _initializeCamera() async {
+//     final cameras = await availableCameras();
+//     final frontCamera = cameras.firstWhere(
+//       (camera) => camera.lensDirection == CameraLensDirection.front,
+//     );
+
+//     _cameraController = CameraController(
+//       frontCamera,
+//       ResolutionPreset.medium,
+//     );
+
+//     _initializeCameraFuture = _cameraController.initialize();
+//   }
+
+//   // Загрузка модели TFLite
+//   void _loadModel() async {
+//     _interpreter = await Interpreter.fromAsset('yolov8n-pose.tflite');
+//     setState(() {
+//       _isModelLoaded = true;
+//     });
+//   }
+
+//   // Обработка кадров с камеры
+//   void _processCameraImage(CameraImage img) async {
+//     // Преобразование кадра в формат, подходящий для модели
+//     final input = _preprocessImage(img);
+
+//     // Выполнение модели
+//     final output = List.filled(17 * 3, 0.0).reshape([1, 17, 3]);
+//     _interpreter.run(input, output);
+
+//     // Явное приведение типа output к List<List<List<double>>>
+//     final List<List<List<double>>> typedOutput = output.cast<List<List<double>>>();
+
+//     // Преобразование выходных данных в ключевые точки
+//     final keypoints = _convertOutputToKeypoints(typedOutput);
+
+//     // Фильтруем ключевые точки в зависимости от выбранного упражнения
+//     final filteredKeypoints = _filterKeypoints(keypoints, _kpts);
+
+//     // Обновление UI
+//     if (mounted) {
+//       setState(() {
+//         _keypoints = filteredKeypoints;
+//       });
+//     }
+//   }
+
+//   // Преобразование кадра в формат для модели
+//   List<List<List<double>>> _preprocessImage(CameraImage img) {
+//     // Здесь нужно преобразовать кадр в формат, подходящий для модели
+//     // Например, изменить размер, нормализовать и т.д.
+//     return [];
+//   }
+
+//   // Преобразование выходных данных модели в ключевые точки
+//   List<Offset> _convertOutputToKeypoints(List<List<List<double>>> output) {
+//     final keypoints = <Offset>[];
+//     for (var i = 0; i < output[0].length; i++) {
+//       final x = output[0][i][0];
+//       final y = output[0][i][1];
+//       keypoints.add(Offset(x, y));
+//     }
+//     return keypoints;
+//   }
+
+//   // Фильтрация ключевых точек
+//   List<Offset> _filterKeypoints(List<Offset> keypoints, List<int> kpts) {
+//     final filteredKeypoints = <Offset>[];
+//     for (final index in kpts) {
+//       if (index < keypoints.length) {
+//         filteredKeypoints.add(keypoints[index]);
+//       }
+//     }
+//     return filteredKeypoints;
+//   }
+
+//   @override
+//   void dispose() {
+//     _cameraController.dispose();
+//     _interpreter.close();
+//     super.dispose();
+//   }
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       appBar: AppBar(),
+//       body: Stack(
+//         children: [
+//           Column(
+//             children: [
+//               // Выпадающий список
+//               Padding(
+//                 padding: const EdgeInsets.all(16.0),
+//                 child: DropdownButtonFormField(
+//                   decoration: InputDecoration(
+//                     border: OutlineInputBorder(
+//                       borderRadius: BorderRadius.circular(10),
+//                     ),
+//                     contentPadding:
+//                         const EdgeInsets.symmetric(vertical: 20, horizontal: 10),
+//                     enabledBorder: OutlineInputBorder(
+//                       borderRadius: BorderRadius.circular(10),
+//                       borderSide: const BorderSide(
+//                           color: Color.fromARGB(255, 198, 157, 252), width: 1.5),
+//                     ),
+//                     focusedBorder: OutlineInputBorder(
+//                       borderRadius: BorderRadius.circular(10),
+//                       borderSide: const BorderSide(
+//                           color: Color.fromARGB(255, 198, 157, 252), width: 2.5),
+//                     ),
+//                     labelText: AppLocalizations.of(context)!.chooseExercise,
+//                     labelStyle:
+//                         Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 18),
+//                   ),
+//                   items: _exercises
+//                       .map<DropdownMenuItem<String>>(
+//                         (String exercise) => DropdownMenuItem<String>(
+//                           value: exercise,
+//                           child: Text(exercise),
+//                         ),
+//                       )
+//                       .toList(),
+//                   onChanged: (String? exercise) {
+//                     setState(() {
+//                       _exercise = exercise ?? _exercise;
+//                       // Обновляем индексы ключевых точек при изменении упражнения
+//                       _updateExercises();
+
+//                       // Останавливаем видеопоток, если он был запущен
+//                       if (_isWorkoutStarted) {
+//                         _stopVideoStream();
+//                         _isWorkoutStarted = false; // Сбрасываем состояние кнопки
+//                       }
+//                     });
+//                   },
+//                   value: _exercise,
+//                 ),
+//               ),
+
+//               // Видеоплеер с ключевыми точками
+//               Expanded(
+//                 child: FutureBuilder<void>(
+//                   future: _initializeCameraFuture,
+//                   builder: (context, snapshot) {
+//                     if (snapshot.connectionState == ConnectionState.done) {
+//                       return _isWorkoutStarted
+//                           ? Stack(
+//                               children: [
+//                                 CameraPreview(_cameraController),
+//                                 CustomPaint(
+//                                   painter: KeypointsPainter(_keypoints),
+//                                 ),
+//                               ],
+//                             )
+//                           : Container(
+//                               color: Colors.grey[300],
+//                               child: Center(
+//                                 child: Text(
+//                                   'Нажмите "Начать" для запуска видеопотока',
+//                                   style: TextStyle(
+//                                     color: Colors.grey[700],
+//                                     fontSize: 16,
+//                                   ),
+//                                 ),
+//                               ),
+//                             );
+//                     } else {
+//                       return const Center(child: CircularProgressIndicator());
+//                     }
+//                   },
+//                 ),
+//               ),
+
+//               // Кнопка "Начать упражнение"
+//               Padding(
+//                 padding: const EdgeInsets.all(16.0),
+//                 child: ElevatedButton(
+//                   onPressed: _toggleWorkout,
+//                   style: ElevatedButton.styleFrom(
+//                     backgroundColor: _isWorkoutStarted
+//                         ? const Color.fromARGB(255, 108, 91, 131)
+//                         : const Color.fromARGB(255, 161, 90, 254),
+//                     foregroundColor: Colors.white,
+//                     padding:
+//                         const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+//                   ),
+//                   child: Text(
+//                     _isWorkoutStarted
+//                         ? AppLocalizations.of(context)!.finishWorkout!
+//                         : AppLocalizations.of(context)!.startWorkout!,
+//                     style: const TextStyle(fontSize: 18),
+//                   ),
+//                 ),
+//               ),
+//             ],
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+// }
+
+// // Отрисовка ключевых точек
+// class KeypointsPainter extends CustomPainter {
+//   final List<Offset> keypoints;
+
+//   KeypointsPainter(this.keypoints);
+
+//   @override
+//   void paint(Canvas canvas, Size size) {
+//     final paint = Paint()
+//       ..color = Colors.red
+//       ..strokeWidth = 4.0
+//       ..style = PaintingStyle.fill;
+
+//     for (final keypoint in keypoints) {
+//       canvas.drawCircle(keypoint, 8.0, paint);
+//     }
+//   }
+
+//   @override
+//   bool shouldRepaint(KeypointsPainter oldDelegate) => true;
+// }
