@@ -4,6 +4,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter/services.dart'; // Для Clipboard
 import 'package:url_launcher/url_launcher.dart'; // Для launch
 import 'package:camera/camera.dart';
+import 'package:tflite_flutter/tflite_flutter.dart';
 
 void main() {
   runApp(const MyApp());
@@ -383,19 +384,235 @@ class SecondRoute extends StatefulWidget {
   State<SecondRoute> createState() => _SecondRouteState();
 }
 
+// class _SecondRouteState extends State<SecondRoute> {
+//   late List<String> _exercises;
+//   String _exercise = 'Pushups';
+//   bool _isWorkoutStarted = false;
+
+//   // Камера
+//   late CameraController _cameraController;
+//   late Future<void> _initializeCameraFuture;
+
+//   @override
+//   void initState() {
+//     super.initState();
+//     _initializeCameraFuture = _initializeCamera(); // Инициализация Future
+//   }
+
+//   @override
+//   void didChangeDependencies() {
+//     super.didChangeDependencies();
+//     _updateExercises();
+//   }
+
+//   Future<void> _initializeCamera() async {
+//     try {
+//       final cameras = await availableCameras();
+//       final frontCamera = cameras.firstWhere(
+//         (camera) => camera.lensDirection == CameraLensDirection.front,
+//       );
+
+//       _cameraController = CameraController(
+//         frontCamera,
+//         ResolutionPreset.medium,
+//       );
+
+//       await _cameraController.initialize(); // Инициализация камеры
+//     } catch (e) {
+//       if (mounted) {
+//         ScaffoldMessenger.of(context).showSnackBar(
+//           SnackBar(content: Text("Camera error: $e")),
+//         );
+//       }
+//     }
+//   }
+
+//   void _updateExercises() {
+//     final appLocalizations = AppLocalizations.of(context)!;
+//     setState(() {
+//       _exercises = [
+//         appLocalizations.squats!,
+//         appLocalizations.pushups!,
+//         appLocalizations.legpress!,
+//       ];
+//       if (_exercises.contains(_exercise)) {
+//         _exercise = _exercise;
+//       } else {
+//         _exercise = _exercises.first;
+//       }
+//     });
+//   }
+
+//   void _toggleWorkout() {
+//     setState(() {
+//       _isWorkoutStarted = !_isWorkoutStarted;
+//     });
+
+//     if (_isWorkoutStarted) {
+//       _startVideoStream();
+//     } else {
+//       _stopVideoStream();
+//     }
+//   }
+
+//   void _startVideoStream() async {
+//     if (!_cameraController.value.isStreamingImages) {
+//       await _cameraController.startImageStream((CameraImage img) {
+//         // Здесь можно добавить обработку изображения, если нужно
+//       });
+//     }
+//   }
+
+//   void _stopVideoStream() async {
+//     if (_cameraController.value.isStreamingImages) {
+//       await _cameraController.stopImageStream();
+//     }
+//   }
+
+//   @override
+//   void dispose() {
+//     _cameraController.dispose();
+//     super.dispose();
+//   }
+
+//   @override
+//   Widget build(BuildContext context) {
+//     final startVideo =  AppLocalizations.of(context)!.startVideo!;
+//     return Scaffold(
+//       appBar: AppBar(),
+//       body: Stack(
+//         children: [
+//           Column(
+//             children: [
+//               Padding(
+//                 padding: const EdgeInsets.all(16.0),
+//                 child: DropdownButtonFormField(
+//                   decoration: InputDecoration(
+//                     border: OutlineInputBorder(
+//                       borderRadius: BorderRadius.circular(10),
+//                     ),
+//                     contentPadding:
+//                         const EdgeInsets.symmetric(vertical: 20, horizontal: 10),
+//                     enabledBorder: OutlineInputBorder(
+//                       borderRadius: BorderRadius.circular(10),
+//                       borderSide: const BorderSide(
+//                           color: Color.fromARGB(255, 198, 157, 252), width: 1.5),
+//                     ),
+//                     focusedBorder: OutlineInputBorder(
+//                       borderRadius: BorderRadius.circular(10),
+//                       borderSide: const BorderSide(
+//                           color: Color.fromARGB(255, 198, 157, 252), width: 2.5),
+//                     ),
+//                     labelText: AppLocalizations.of(context)!.chooseExercise,
+//                     labelStyle:
+//                         Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 18),
+//                   ),
+//                   items: _exercises
+//                       .map<DropdownMenuItem<String>>(
+//                         (String exercise) => DropdownMenuItem<String>(
+//                           value: exercise,
+//                           child: Text(exercise),
+//                         ),
+//                       )
+//                       .toList(),
+//                   onChanged: (String? exercise) {
+//                     setState(() {
+//                       _exercise = exercise ?? _exercise;
+//                       _updateExercises();
+
+//                       if (_isWorkoutStarted) {
+//                         _stopVideoStream();
+//                         _isWorkoutStarted = false;
+//                       }
+//                     });
+//                   },
+//                   value: _exercise,
+//                 ),
+//               ),
+
+//               Expanded(
+//                 child: FutureBuilder<void>(
+//                   future: _initializeCameraFuture,
+//                   builder: (context, snapshot) {
+//                     if (snapshot.connectionState == ConnectionState.done) {
+//                       if (snapshot.hasError) {
+//                         return Center(
+//                           child: Text("Camera error: ${snapshot.error}"),
+//                         );
+//                       }
+//                       return _isWorkoutStarted
+//                           ? CameraPreview(_cameraController)
+//                           : Container(
+//                               color: Colors.grey[300],
+//                               child: Center(
+//                                 child: Text(
+//                                   startVideo,
+//                                   style: TextStyle(
+//                                     color: Colors.grey[700],
+//                                     fontSize: 16,
+//                                   ),
+//                                 ),
+//                               ),
+//                             );
+//                     } else {
+//                       return const Center(child: CircularProgressIndicator());
+//                     }
+//                   },
+//                 ),
+//               ),
+
+//               Padding(
+//                 padding: const EdgeInsets.all(16.0),
+//                 child: ElevatedButton(
+//                   onPressed: _toggleWorkout,
+//                   style: ElevatedButton.styleFrom(
+//                     backgroundColor: _isWorkoutStarted
+//                         ? const Color.fromARGB(255, 108, 91, 131)
+//                         : const Color.fromARGB(255, 161, 90, 254),
+//                     foregroundColor: Colors.white,
+//                     padding:
+//                         const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+//                   ),
+//                   child: Text(
+//                     _isWorkoutStarted
+//                         ? AppLocalizations.of(context)!.finishWorkout!
+//                         : AppLocalizations.of(context)!.startWorkout!,
+//                     style: const TextStyle(fontSize: 18),
+//                   ),
+//                 ),
+//               ),
+//             ],
+//           ),
+//         ],
+//       ),
+//     );
+//   }
+// }
+
 class _SecondRouteState extends State<SecondRoute> {
   late List<String> _exercises;
   String _exercise = 'Pushups';
   bool _isWorkoutStarted = false;
 
+  // Индексы ключевых точек
+  List<int> _kpts = [5, 7, 9]; // По умолчанию для Push-ups
+
   // Камера
   late CameraController _cameraController;
   late Future<void> _initializeCameraFuture;
+
+  // TFLite
+  late Interpreter _interpreter;
+  bool _isModelLoaded = false;
+
+  // Ключевые точки
+  List<Offset> _keypoints = [];
 
   @override
   void initState() {
     super.initState();
     _initializeCameraFuture = _initializeCamera(); // Инициализация Future
+    _loadModel();
   }
 
   @override
@@ -418,9 +635,11 @@ class _SecondRouteState extends State<SecondRoute> {
 
       await _cameraController.initialize(); // Инициализация камеры
     } catch (e) {
+      //print("Ошибка при инициализации камеры: $e");
+      // Можно показать пользователю сообщение об ошибке
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Camera error: $e")),
+          SnackBar(content: Text("Ошибка при инициализации камеры: $e")),
         );
       }
     }
@@ -438,6 +657,21 @@ class _SecondRouteState extends State<SecondRoute> {
         _exercise = _exercise;
       } else {
         _exercise = _exercises.first;
+      }
+
+      // Обновляем индексы ключевых точек в зависимости от выбранного упражнения
+      switch (_exercise) {
+        case 'Pushups':
+          _kpts = [5, 7, 9];
+          break;
+        case 'Squats':
+          _kpts = [5, 11, 13];
+          break;
+        case 'Legpress':
+          _kpts = [11, 13, 15];
+          break;
+        default:
+          _kpts = [5, 7, 9]; // По умолчанию для Push-ups
       }
     });
   }
@@ -457,7 +691,9 @@ class _SecondRouteState extends State<SecondRoute> {
   void _startVideoStream() async {
     if (!_cameraController.value.isStreamingImages) {
       await _cameraController.startImageStream((CameraImage img) {
-        // Здесь можно добавить обработку изображения, если нужно
+        if (_isModelLoaded) {
+          _processCameraImage(img);
+        }
       });
     }
   }
@@ -468,15 +704,75 @@ class _SecondRouteState extends State<SecondRoute> {
     }
   }
 
+  void _loadModel() async {
+    try {
+      _interpreter = await Interpreter.fromAsset('yolov8n.tflite');
+      setState(() {
+        _isModelLoaded = true;
+      });
+    } catch (e) {
+      //print("Ошибка при загрузке модели: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Ошибка при загрузке модели: $e")),
+        );
+      }
+    }
+  }
+
+  void _processCameraImage(CameraImage img) async {
+    
+    final input = _preprocessImage(img);
+    final output = List.filled(17 * 3, 0.0).reshape([1, 17, 3]);
+    _interpreter.run(input, output);
+
+    final List<List<List<double>>> typedOutput = output.cast<List<List<double>>>();
+    final keypoints = _convertOutputToKeypoints(typedOutput);
+    final filteredKeypoints = _filterKeypoints(keypoints, _kpts);
+
+    if (mounted) {
+      setState(() {
+        _keypoints = filteredKeypoints;
+      });
+    }
+  }
+
+  List<List<List<double>>> _preprocessImage(CameraImage img) {
+    // Пример: преобразование изображения в формат, подходящий для модели
+    final input = List.generate(256, (i) => List.generate(256, (j) => List.filled(3, 0.0)));
+    // Ваш код обработки изображения
+    return input;
+  }
+
+  List<Offset> _convertOutputToKeypoints(List<List<List<double>>> output) {
+    final keypoints = <Offset>[];
+    for (var i = 0; i < output[0].length; i++) {
+      final x = output[0][i][0];
+      final y = output[0][i][1];
+      keypoints.add(Offset(x, y));
+    }
+    return keypoints;
+  }
+
+  List<Offset> _filterKeypoints(List<Offset> keypoints, List<int> kpts) {
+    final filteredKeypoints = <Offset>[];
+    for (final index in kpts) {
+      if (index < keypoints.length) {
+        filteredKeypoints.add(keypoints[index]);
+      }
+    }
+    return filteredKeypoints;
+  }
+
   @override
   void dispose() {
     _cameraController.dispose();
+    _interpreter.close();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final startVideo =  AppLocalizations.of(context)!.startVideo!;
     return Scaffold(
       appBar: AppBar(),
       body: Stack(
@@ -536,16 +832,23 @@ class _SecondRouteState extends State<SecondRoute> {
                     if (snapshot.connectionState == ConnectionState.done) {
                       if (snapshot.hasError) {
                         return Center(
-                          child: Text("Camera error: ${snapshot.error}"),
+                          child: Text("Ошибка при инициализации камеры: ${snapshot.error}"),
                         );
                       }
                       return _isWorkoutStarted
-                          ? CameraPreview(_cameraController)
+                          ? Stack(
+                              children: [
+                                CameraPreview(_cameraController),
+                                CustomPaint(
+                                  painter: KeypointsPainter(_keypoints),
+                                ),
+                              ],
+                            )
                           : Container(
                               color: Colors.grey[300],
                               child: Center(
                                 child: Text(
-                                  startVideo,
+                                  'Нажмите "Начать" для запуска видеопотока',
                                   style: TextStyle(
                                     color: Colors.grey[700],
                                     fontSize: 16,
@@ -577,17 +880,19 @@ class _SecondRouteState extends State<SecondRoute> {
                         ? AppLocalizations.of(context)!.finishWorkout!
                         : AppLocalizations.of(context)!.startWorkout!,
                     style: const TextStyle(fontSize: 18),
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
+              ],
+            ),
+          ],
+        ),
+      );
+    }
   }
-}
 
+
+/// не трогала
 @immutable
 class ExpandableFab extends StatefulWidget {
   const ExpandableFab({
@@ -782,4 +1087,27 @@ class ActionButton extends StatelessWidget {
       ),
     );
   }
+}
+
+///
+///
+class KeypointsPainter extends CustomPainter {
+  final List<Offset> keypoints;
+
+  KeypointsPainter(this.keypoints);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.red
+      ..strokeWidth = 4.0
+      ..style = PaintingStyle.fill;
+
+    for (final keypoint in keypoints) {
+      canvas.drawCircle(keypoint, 8.0, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(KeypointsPainter oldDelegate) => true;
 }
