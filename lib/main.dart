@@ -6,7 +6,7 @@ import 'package:url_launcher/url_launcher.dart'; // Для launch
 import 'package:camera/camera.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-// import 'dart:typed_data';
+import 'package:uuid/uuid.dart';
 import 'package:image/image.dart' as img;
 
 void main() {
@@ -392,7 +392,10 @@ class _SecondRouteState extends State<SecondRoute> {
   late List<String> _exercises;
   String _exercise = 'Pushups';
   bool _isWorkoutStarted = false;
-
+  int _repsCount = 0;
+  var uuid = Uuid();
+  late String uniqueId;
+  
   // Камера
   late CameraController _cameraController;
   late Future<void> _initializeCameraFuture;
@@ -453,6 +456,8 @@ class _SecondRouteState extends State<SecondRoute> {
     });
 
     if (_isWorkoutStarted) {
+      _repsCount = 0;
+       uniqueId = "1234567654321"; //uuid.v4();
       _startVideoStream();
     } else {
       _stopVideoStream();
@@ -477,7 +482,7 @@ void _startVideoStream() async {
       if (!_isProcessing && _frameCounter % _frameSkip == 0) {
         _isProcessing = true;
 
-        final resizedImage = await _resizeImage(img, 640, 480); // Фиксированный размер 640x480
+        final resizedImage = await _resizeImage(img, 1280, 720); // Фиксированный размер 640x480
         await _sendFrame(resizedImage);
 
         _isProcessing = false;
@@ -488,34 +493,34 @@ void _startVideoStream() async {
 
 bool _isProcessing = false; // Флаг для управления потоком запросов
 
-Future<Uint8List> _convertYUV420ToJPEG(CameraImage image) async {
-  final int width = image.width;
-  final int height = image.height;
-  final img.Image convertedImage = img.Image(width, height);
+// Future<Uint8List> _convertYUV420ToJPEG(CameraImage image) async {
+//   final int width = image.width;
+//   final int height = image.height;
+//   final img.Image convertedImage = img.Image(width, height);
 
-  //final int uvRowStride = image.planes[1].bytesPerRow;
-  final int uvPixelStride = image.planes[1].bytesPerPixel!;
+//   //final int uvRowStride = image.planes[1].bytesPerRow;
+//   final int uvPixelStride = image.planes[1].bytesPerPixel!;
 
-  final Uint8List yPlane = image.planes[0].bytes;
-  final Uint8List uPlane = image.planes[1].bytes;
-  final Uint8List vPlane = image.planes[2].bytes;
+//   final Uint8List yPlane = image.planes[0].bytes;
+//   final Uint8List uPlane = image.planes[1].bytes;
+//   final Uint8List vPlane = image.planes[2].bytes;
 
-  int yIndex = 0;
-  int uvIndex = 0;
-  for (int y = 0; y < height; y++) {
-    for (int x = 0; x < width; x++) {
-      final int yValue = yPlane[yIndex++] & 0xFF;
-      final int uvOffset = uvIndex ~/ uvPixelStride;
-      final int uValue = uPlane[uvOffset] & 0xFF;
-      final int vValue = vPlane[uvOffset] & 0xFF;
+//   int yIndex = 0;
+//   int uvIndex = 0;
+//   for (int y = 0; y < height; y++) {
+//     for (int x = 0; x < width; x++) {
+//       final int yValue = yPlane[yIndex++] & 0xFF;
+//       final int uvOffset = uvIndex ~/ uvPixelStride;
+//       final int uValue = uPlane[uvOffset] & 0xFF;
+//       final int vValue = vPlane[uvOffset] & 0xFF;
 
-      convertedImage.setPixelRgba(x, y, yValue, uValue, vValue);
-      if (x % 2 == 1) uvIndex++;
-    }
-  }
+//       convertedImage.setPixelRgba(x, y, yValue, uValue, vValue);
+//       if (x % 2 == 1) uvIndex++;
+//     }
+//   }
 
-  return Uint8List.fromList(img.encodeJpg(convertedImage));
-}
+//   return Uint8List.fromList(img.encodeJpg(convertedImage));
+// }
 
 Future<Uint8List> _resizeImage(CameraImage cameraImage, int targetWidth, int targetHeight) async {
   // Преобразуем CameraImage в изображение
@@ -534,27 +539,60 @@ Future<Uint8List> _resizeImage(CameraImage cameraImage, int targetWidth, int tar
 }
 
 Uint8List? _processedImage;
-int _repsCount = 0;
 
-Future<void> _sendFrame(CameraImage img) async {
+// Future<void> _sendFrame(CameraImage img) async {
   
-  try {
-    // Конвертируем CameraImage в байты
-    Uint8List imageBytes = await _convertYUV420ToJPEG(img);
+//   try {
+//     // Конвертируем CameraImage в байты
+//     Uint8List imageBytes = await _convertYUV420ToJPEG(img);
 
-    var request = http.MultipartRequest('POST', Uri.parse("http://172.27.27.254:8000/process_frame/"))
-      ..files.add(http.MultipartFile.fromBytes('file', imageBytes, filename: 'frame.jpg'))
-      ..fields['session_id'] = "12345"; // Генерация ID
+//     var request = http.MultipartRequest('POST', Uri.parse("http://172.27.27.254:8000/process_frame/"))
+//       ..files.add(http.MultipartFile.fromBytes('file', imageBytes, filename: 'frame.jpg'))
+//       ..fields['session_id'] = "12345"; // Генерация ID
+
+//     var response = await request.send();
+//     if (response.statusCode == 200) {
+//       var responseData = await response.stream.bytesToString();
+//       var jsonResponse = jsonDecode(responseData);
+
+//       // Обновляем изображение в UI
+//       setState(() {
+//         _processedImage = base64Decode(jsonResponse['image']);
+//         _repsCount = jsonResponse['reps'];
+//       });
+//     } else {
+//       //print("Ошибка сервера: ${response.statusCode}");
+//     }
+//   } catch (e) {
+//     //print("Ошибка отправки кадра: $e");
+//   }
+// }
+
+
+Future<void> _sendFrame(Uint8List jpgBytes) async {
+  try {
+    var request = http.MultipartRequest(
+      'POST',
+      Uri.parse("http://172.27.27.254:8000/process_frame/"),
+    )
+      ..files.add(http.MultipartFile.fromBytes(
+        'file',
+        jpgBytes,
+        filename: 'frame.jpg',
+      ))
+      ..fields['session_id'] = uniqueId;
 
     var response = await request.send();
+
     if (response.statusCode == 200) {
       var responseData = await response.stream.bytesToString();
       var jsonResponse = jsonDecode(responseData);
 
-      // Обновляем изображение в UI
       setState(() {
         _processedImage = base64Decode(jsonResponse['image']);
-        _repsCount = jsonResponse['reps'];
+        _repsCount = jsonResponse['reps'] is List && jsonResponse['reps'].isNotEmpty
+          ? jsonResponse['reps'][0]  // Получаем число из списка
+          : 0;
       });
     } else {
       //print("Ошибка сервера: ${response.statusCode}");
@@ -575,120 +613,6 @@ Future<void> _sendFrame(CameraImage img) async {
     _cameraController.dispose();
     super.dispose();
   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     final startVideo =  AppLocalizations.of(context)!.startVideo!;
-//     return Scaffold(
-//       appBar: AppBar(),
-//       body: Stack(
-//         children: [
-//           Column(
-//             children: [
-//               Padding(
-//                 padding: const EdgeInsets.all(16.0),
-//                 child: DropdownButtonFormField(
-//                   decoration: InputDecoration(
-//                     border: OutlineInputBorder(
-//                       borderRadius: BorderRadius.circular(10),
-//                     ),
-//                     contentPadding:
-//                         const EdgeInsets.symmetric(vertical: 20, horizontal: 10),
-//                     enabledBorder: OutlineInputBorder(
-//                       borderRadius: BorderRadius.circular(10),
-//                       borderSide: const BorderSide(
-//                           color: Color.fromARGB(255, 198, 157, 252), width: 1.5),
-//                     ),
-//                     focusedBorder: OutlineInputBorder(
-//                       borderRadius: BorderRadius.circular(10),
-//                       borderSide: const BorderSide(
-//                           color: Color.fromARGB(255, 198, 157, 252), width: 2.5),
-//                     ),
-//                     labelText: AppLocalizations.of(context)!.chooseExercise,
-//                     labelStyle:
-//                         Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 18),
-//                   ),
-//                   items: _exercises
-//                       .map<DropdownMenuItem<String>>(
-//                         (String exercise) => DropdownMenuItem<String>(
-//                           value: exercise,
-//                           child: Text(exercise),
-//                         ),
-//                       )
-//                       .toList(),
-//                   onChanged: (String? exercise) {
-//                     setState(() {
-//                       _exercise = exercise ?? _exercise;
-//                       _updateExercises();
-
-//                       if (_isWorkoutStarted) {
-//                         _stopVideoStream();
-//                         _isWorkoutStarted = false;
-//                       }
-//                     });
-//                   },
-//                   value: _exercise,
-//                 ),
-//               ),
-
-//               Expanded(
-//                 child: FutureBuilder<void>(
-//                   future: _initializeCameraFuture,
-//                   builder: (context, snapshot) {
-//                     if (snapshot.connectionState == ConnectionState.done) {
-//                       if (snapshot.hasError) {
-//                         return Center(
-//                           child: Text("Camera error: ${snapshot.error}"),
-//                         );
-//                       }
-//                       return _isWorkoutStarted
-//                           ? CameraPreview(_cameraController)
-//                           : Container(
-//                               color: Colors.grey[300],
-//                               child: Center(
-//                                 child: Text(
-//                                   startVideo,
-//                                   style: TextStyle(
-//                                     color: Colors.grey[700],
-//                                     fontSize: 16,
-//                                   ),
-//                                 ),
-//                               ),
-//                             );
-//                     } else {
-//                       return const Center(child: CircularProgressIndicator());
-//                     }
-//                   },
-//                 ),
-//               ),
-
-//               Padding(
-//                 padding: const EdgeInsets.all(16.0),
-//                 child: ElevatedButton(
-//                   onPressed: _toggleWorkout,
-//                   style: ElevatedButton.styleFrom(
-//                     backgroundColor: _isWorkoutStarted
-//                         ? const Color.fromARGB(255, 108, 91, 131)
-//                         : const Color.fromARGB(255, 161, 90, 254),
-//                     foregroundColor: Colors.white,
-//                     padding:
-//                         const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-//                   ),
-//                   child: Text(
-//                     _isWorkoutStarted
-//                         ? AppLocalizations.of(context)!.finishWorkout!
-//                         : AppLocalizations.of(context)!.startWorkout!,
-//                     style: const TextStyle(fontSize: 18),
-//                   ),
-//                 ),
-//               ),
-//             ],
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-// }
 
 @override
 Widget build(BuildContext context) {
@@ -814,278 +738,6 @@ Widget build(BuildContext context) {
     );
   }
 }
-// class _SecondRouteState extends State<SecondRoute> {
-//   late List<String> _exercises;
-//   String _exercise = 'Pushups';
-//   bool _isWorkoutStarted = false;
-
-//   // Камера
-//   late CameraController _cameraController;
-//   late Future<void> _initializeCameraFuture;
-
-//   // Для отображения обработанного видеопотока
-//   late StreamController<Uint8List> _imageStreamController;
-//   late Stream<Uint8List> _imageStream;
-//   late Timer _timer;
-
-//   @override
-//   void initState() {
-//     super.initState();
-//     _initializeCameraFuture = _initializeCamera(); // Инициализация Future
-//     _imageStreamController = StreamController<Uint8List>();
-//     _imageStream = _imageStreamController.stream;
-//   }
-
-//   @override
-//   void didChangeDependencies() {
-//     super.didChangeDependencies();
-//     _updateExercises();
-//   }
-
-//   Future<void> _initializeCamera() async {
-//     try {
-//       final cameras = await availableCameras();
-//       final frontCamera = cameras.firstWhere(
-//         (camera) => camera.lensDirection == CameraLensDirection.front,
-//       );
-
-//       _cameraController = CameraController(
-//         frontCamera,
-//         ResolutionPreset.medium,
-//       );
-
-//       await _cameraController.initialize(); // Инициализация камеры
-//     } catch (e) {
-//       if (mounted) {
-//         ScaffoldMessenger.of(context).showSnackBar(
-//           SnackBar(content: Text("Camera error: $e")),
-//         );
-//       }
-//     }
-//   }
-
-//   void _updateExercises() {
-//     final appLocalizations = AppLocalizations.of(context)!;
-//     setState(() {
-//       _exercises = [
-//         appLocalizations.squats!,
-//         appLocalizations.pushups!,
-//         appLocalizations.legpress!,
-//       ];
-//       if (_exercises.contains(_exercise)) {
-//         _exercise = _exercise;
-//       } else {
-//         _exercise = _exercises.first;
-//       }
-//     });
-//   }
-
-//   void _toggleWorkout() {
-//     setState(() {
-//       _isWorkoutStarted = !_isWorkoutStarted;
-//     });
-
-//     if (_isWorkoutStarted) {
-//       _startVideoStream();
-//     } else {
-//       _stopVideoStream();
-//     }
-//   }
-
-//   void _startVideoStream() async {
-//     if (!_cameraController.value.isStreamingImages) {
-//       await _cameraController.startImageStream((CameraImage img) async {
-//         // Отправка кадра на сервер для обработки
-//         final processedFrame = await _sendFrameToServer(img);
-//         if (processedFrame != null) {
-//           _imageStreamController.add(processedFrame);
-//         }
-//       });
-//     }
-//   }
-
-//   void _stopVideoStream() async {
-//     if (_cameraController.value.isStreamingImages) {
-//       await _cameraController.stopImageStream();
-//     }
-//     _timer.cancel(); // Остановка таймера
-//   }
-
-//   Future<Uint8List?> _sendFrameToServer(CameraImage img) async {
-//     try {
-//       // Преобразование CameraImage в JPEG
-//       final jpegBytes = await _convertCameraImageToJpeg(img);
-
-//       // Отправка на сервер
-//       final url = Uri.parse('http://<your-server-ip>:5000/process_frame');
-//       final request = http.MultipartRequest('POST', url);
-//       request.files.add(http.MultipartFile.fromBytes('frame', jpegBytes));
-
-//       final response = await request.send();
-
-//       if (response.statusCode == 200) {
-//         final responseData = await response.stream.toBytes();
-//         return responseData;
-//       } else {
-//         throw Exception('Failed to process frame');
-//       }
-//     } catch (e) {
-//       if (mounted) {
-//         ScaffoldMessenger.of(context).showSnackBar(
-//           SnackBar(content: Text("Error processing frame: $e")),
-//         );
-//       }
-//       return null;
-//     }
-//   }
-
-//   Future<Uint8List> _convertCameraImageToJpeg(CameraImage img) async {
-//     // Преобразование CameraImage в JPEG (примерная реализация)
-//     // В реальном проекте используйте библиотеку для обработки изображений, например `image` или `flutter_image`
-//     // Здесь приведен упрощенный пример
-//     final plane = img.planes[0];
-//     final bytes = plane.bytes;
-//     return Uint8List.fromList(bytes);
-//   }
-
-//   @override
-//   void dispose() {
-//     _cameraController.dispose();
-//     _imageStreamController.close();
-//     super.dispose();
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     final startVideo = AppLocalizations.of(context)!.startVideo!;
-//     return Scaffold(
-//       appBar: AppBar(),
-//       body: Stack(
-//         children: [
-//           Column(
-//             children: [
-//               Padding(
-//                 padding: const EdgeInsets.all(16.0),
-//                 child: DropdownButtonFormField(
-//                   decoration: InputDecoration(
-//                     border: OutlineInputBorder(
-//                       borderRadius: BorderRadius.circular(10),
-//                     ),
-//                     contentPadding:
-//                         const EdgeInsets.symmetric(vertical: 20, horizontal: 10),
-//                     enabledBorder: OutlineInputBorder(
-//                       borderRadius: BorderRadius.circular(10),
-//                       borderSide: const BorderSide(
-//                           color: Color.fromARGB(255, 198, 157, 252), width: 1.5),
-//                     ),
-//                     focusedBorder: OutlineInputBorder(
-//                       borderRadius: BorderRadius.circular(10),
-//                       borderSide: const BorderSide(
-//                           color: Color.fromARGB(255, 198, 157, 252), width: 2.5),
-//                     ),
-//                     labelText: AppLocalizations.of(context)!.chooseExercise,
-//                     labelStyle:
-//                         Theme.of(context).textTheme.titleMedium?.copyWith(fontSize: 18),
-//                   ),
-//                   items: _exercises
-//                       .map<DropdownMenuItem<String>>(
-//                         (String exercise) => DropdownMenuItem<String>(
-//                           value: exercise,
-//                           child: Text(exercise),
-//                         ),
-//                       )
-//                       .toList(),
-//                   onChanged: (String? exercise) {
-//                     setState(() {
-//                       _exercise = exercise ?? _exercise;
-//                       _updateExercises();
-
-//                       if (_isWorkoutStarted) {
-//                         _stopVideoStream();
-//                         _isWorkoutStarted = false;
-//                       }
-//                     });
-//                   },
-//                   value: _exercise,
-//                 ),
-//               ),
-
-//               Expanded(
-//                 child: FutureBuilder<void>(
-//                   future: _initializeCameraFuture,
-//                   builder: (context, snapshot) {
-//                     if (snapshot.connectionState == ConnectionState.done) {
-//                       if (snapshot.hasError) {
-//                         return Center(
-//                           child: Text("Camera error: ${snapshot.error}"),
-//                         );
-//                       }
-//                       return _isWorkoutStarted
-//                           ? StreamBuilder<Uint8List>(
-//                               stream: _imageStream,
-//                               builder: (context, snapshot) {
-//                                 if (snapshot.hasData) {
-//                                   return Image.memory(snapshot.data!);
-//                                 } else {
-//                                   return Center(
-//                                     child: Text(
-//                                       startVideo,
-//                                       style: TextStyle(
-//                                         color: Colors.grey[700],
-//                                         fontSize: 16,
-//                                       ),
-//                                     ),
-//                                   );
-//                                 }
-//                               },
-//                             )
-//                           : Container(
-//                               color: Colors.grey[300],
-//                               child: Center(
-//                                 child: Text(
-//                                   startVideo,
-//                                   style: TextStyle(
-//                                     color: Colors.grey[700],
-//                                     fontSize: 16,
-//                                   ),
-//                                 ),
-//                               ),
-//                             );
-//                     } else {
-//                       return const Center(child: CircularProgressIndicator());
-//                     }
-//                   },
-//                 ),
-//               ),
-
-//               Padding(
-//                 padding: const EdgeInsets.all(16.0),
-//                 child: ElevatedButton(
-//                   onPressed: _toggleWorkout,
-//                   style: ElevatedButton.styleFrom(
-//                     backgroundColor: _isWorkoutStarted
-//                         ? const Color.fromARGB(255, 108, 91, 131)
-//                         : const Color.fromARGB(255, 161, 90, 254),
-//                     foregroundColor: Colors.white,
-//                     padding:
-//                         const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-//                   ),
-//                   child: Text(
-//                     _isWorkoutStarted
-//                         ? AppLocalizations.of(context)!.finishWorkout!
-//                         : AppLocalizations.of(context)!.startWorkout!,
-//                     style: const TextStyle(fontSize: 18),
-//                   ),
-//                 ),
-//               ),
-//             ],
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-// }
-
 
 @immutable
 class ExpandableFab extends StatefulWidget {

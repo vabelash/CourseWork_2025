@@ -38,6 +38,7 @@ dependencies:
   camera: ^0.10.0
   http: ^0.13.3
   image: ^3.2.0
+  uuid: ^3.0.6
   # tflite_flutter: ^0.11.0
 
 
