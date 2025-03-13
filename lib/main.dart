@@ -9,6 +9,8 @@ import 'dart:convert';
 import 'dart:async';
 import 'package:image/image.dart' as img;
 import 'package:uuid/uuid.dart';
+import 'dart:developer';
+import 'dart:typed_data';
 
 void main() {
   runApp(const MyApp());
@@ -401,6 +403,7 @@ class _SecondRouteState extends State<SecondRoute> {
 
   late CameraController _cameraController;
   late Future<void> _initializeCameraFuture;
+  late Future<void> _imageOutputFuture;
 
   @override
   void initState() {
@@ -423,7 +426,9 @@ class _SecondRouteState extends State<SecondRoute> {
 
       _cameraController = CameraController(
         frontCamera,
-        ResolutionPreset.low,
+        fps: 15,
+        ResolutionPreset.medium,
+        enableAudio: false,
       );
 
       await _cameraController.initialize(); // Инициализация камеры
@@ -461,11 +466,11 @@ class _SecondRouteState extends State<SecondRoute> {
         _isWorkoutStarted = !_isWorkoutStarted;
       });
       if (_isWorkoutStarted) {
-        _repsCount = 0;
         uniqueId = "2025"; //uuid.v4();
         _startVideoStream();
       } else {
         _stopVideoStream();
+        _repsCount = 0;
       }
 }
 
@@ -477,20 +482,36 @@ class _SecondRouteState extends State<SecondRoute> {
   //   }
   // }
 
-int _frameCounter = 0;
-final int _frameSkip = 5; // Увеличиваем пропуск кадров
-bool _isProcessing = true;
+
+// void _startVideoStream() async {
+//   if (!_cameraController.value.isStreamingImages) {
+//     await _cameraController.startImageStream((CameraImage img) async {
+//       if (!_isProcessing) { // Чтобы не перегружать сервер, ждем ответа
+//         _isProcessing = true;
+//         final resizedImage = await _resizeImage(img, 720, 480);
+//           await _sendFrame(resizedImage);
+//         _isProcessing = false;
+//       }
+//     });
+//   }
+// }
+
+Timer? _frameTimer; // Таймер для отправки кадров
+bool _isProcessing = false; // Флаг для отслеживания обработки кадра
+
 
 void _startVideoStream() async {
+  int countFrames = 0;
   if (!_cameraController.value.isStreamingImages) {
     await _cameraController.startImageStream((CameraImage img) async {
-      _frameCounter++;
-      if (!_isProcessing && _frameCounter % _frameSkip == 0) {
+      countFrames++;
+      if (!_isProcessing && countFrames % 5 == 0) {
         _isProcessing = true;
 
         try {
-          final resizedImage = await _resizeImage(img, 720, 480);
-          await _sendFrame(resizedImage);
+          // Преобразуем кадр и отправляем на сервер
+          // final resizedImage = await _resizeImage(img, 720, 480);
+          await _sendFrame(img);
         } catch (e) {
           print("Ошибка обработки кадра: $e");
         } finally {
@@ -499,6 +520,16 @@ void _startVideoStream() async {
       }
     });
   }
+}
+
+
+
+void _stopVideoStream() async {
+  if (_cameraController.value.isStreamingImages) {
+    await _cameraController.stopImageStream();
+  }
+  _frameTimer?.cancel(); // Останавливаем таймер
+  _frameTimer = null; // Сбрасываем таймер
 }
 
 Future<Uint8List> _resizeImage(CameraImage cameraImage, int targetWidth, int targetHeight) async {
@@ -526,30 +557,109 @@ Future<Uint8List> _resizeImage(CameraImage cameraImage, int targetWidth, int tar
   return Uint8List.fromList(img.encodeJpg(resizedImage));
 }
 
-Uint8List? _processedImage;
-Future<void> _sendFrame(Uint8List jpgBytes) async {
+List<Uint8List> _receivedFrames = [];
+// Future<void> _sendFrame(CameraImage img) async {
+//   try {
+//     // Конвертируем CameraImage в байты
+//     Uint8List imageBytes = await _convertYUV420ToJPEG(img);
+
+//     var request = http.MultipartRequest('POST', Uri.parse("http://172.27.27.254:8000/process_frame/"))
+//       ..files.add(http.MultipartFile.fromBytes('file', imageBytes, filename: "file.jpg"))
+//       ..fields['session_id'] = uniqueId; // Можно сгенерировать ID
+
+//     var response = await request.send();
+//     if (response.statusCode == 200) {
+//       var responseData = await response.stream.bytesToString();
+//       var jsonResponse = jsonDecode(responseData);
+
+//       // Обновляем изображение в UI
+//       if (mounted)
+//       {
+//         setState(() {
+//         if (jsonResponse.containsKey('image') && jsonResponse['image'].isNotEmpty){
+//           _receivedFrames.add(base64Decode(jsonResponse['image']));
+//         }
+        
+//         if (_receivedFrames.length > 10) {
+//           _receivedFrames.removeAt(0); // Ограничение на 10 кадров
+//         }
+//         _repsCount = jsonResponse['reps'];
+//         });
+//       }
+//       int receivedFramesLen = _receivedFrames.length;
+//       log("$receivedFramesLen");
+//     } else {
+//       print("Ошибка сервера: ${response.statusCode}");
+//     }
+//   } catch (e) {
+//     print("Ошибка отправки кадра: $e");
+//   }
+// }
+
+// Future<void> _sendFrame(CameraImage img) async {
+//   try {
+//     Uint8List imageBytes = await _convertYUV420ToJPEG(img);
+
+//     var request = http.MultipartRequest('POST', Uri.parse("http://172.27.27.254:8000/process_frame/"))
+//       ..files.add(http.MultipartFile.fromBytes('file', imageBytes, filename: "frame.jpg"))
+//       ..fields['session_id'] = uniqueId;
+
+//     var response = await request.send();
+
+//     if (response.statusCode == 200) {
+//       Uint8List responseBytes = await response.stream.toBytes();
+//       String responseString = utf8.decode(responseBytes);
+//       Map<String, dynamic> jsonResponse = jsonDecode(responseString);
+
+//       //String? repsCount = response.headers['reps-count']; // Получаем число повторений из заголовка
+
+//       setState(() {
+//         _receivedFrames.add(responseBytes);
+//         if (_receivedFrames.length > 10) {
+//           _receivedFrames.removeAt(0);
+//         }
+//         _repsCount = jsonResponse['reps-count'];
+//       });
+//       log("Кадров в списке: ${_receivedFrames.length}");
+//     } else {
+//       print("Ошибка сервера: ${response.statusCode}");
+//     }
+//   } catch (e) {
+//     print("Ошибка отправки кадра: $e");
+//   }
+// }
+
+Future<void> _sendFrame(CameraImage img) async {
   try {
+    // Преобразуем изображение из CameraImage в байты JPEG
+    Uint8List imageBytes = await _convertYUV420ToJPEG(img);
+
     var request = http.MultipartRequest(
-      'POST',
-      Uri.parse("http://172.27.27.254:8000/process_frame/"),
+      'POST', 
+      Uri.parse("http://172.27.27.254:8001/process_frame/")
     )
-      ..files.add(http.MultipartFile.fromBytes(
-        'file',
-        jpgBytes,
-        filename: 'frame.jpg',
-      ))
+      ..files.add(http.MultipartFile.fromBytes('file', imageBytes, filename: "frame.jpg"))
       ..fields['session_id'] = uniqueId;
 
     var response = await request.send();
 
     if (response.statusCode == 200) {
-      var responseData = await response.stream.bytesToString();
-      var jsonResponse = jsonDecode(responseData);
+      // Получаем байты изображения из ответа
+      Uint8List responseBytes = await response.stream.toBytes();
+
+      // Получаем количество повторений из заголовка
+     // String repsCountHeader = response.headers['reps-count'] ?? '0';
+      //int repsCount = int.parse(repsCountHeader);
 
       setState(() {
-        _processedImage = base64Decode(jsonResponse['image']);
-        _repsCount = jsonResponse['reps'];
+        _receivedFrames.add(responseBytes); // Добавляем изображение в список
+        if (_receivedFrames.length > 10) {
+          _receivedFrames.removeAt(0); // Ограничиваем список до 10 кадров
+        }
+        //_repsCount = repsCount; // Обновляем число повторений
       });
+
+      log("Кадров в списке: ${_receivedFrames.length}, Повторений: $_repsCount");
     } else {
       print("Ошибка сервера: ${response.statusCode}");
     }
@@ -558,11 +668,99 @@ Future<void> _sendFrame(Uint8List jpgBytes) async {
   }
 }
 
-  void _stopVideoStream() async {
-    if (_cameraController.value.isStreamingImages) {
-      await _cameraController.stopImageStream();
+// Future<Uint8List> _convertYUV420ToJPEG(CameraImage cameraImage) async {
+//   try {
+//     int width = cameraImage.width;
+//     int height = cameraImage.height;
+
+//     // Получаем компоненты Y, U, V
+//     Plane yPlane = cameraImage.planes[0];
+//     Plane uPlane = cameraImage.planes[1];
+//     Plane vPlane = cameraImage.planes[2];
+
+//     // Вычисляем размер для U и V, так как они в два раза меньше по ширине и высоте
+//     int uvWidth = (width / 2).toInt();
+//     int uvHeight = (height / 2).toInt();
+
+//     // Создаём картину в формате Image с использованием данных YUV
+//     img.Image image = img.Image(width, height);
+
+//     // Конвертируем вручную YUV в RGB
+//     int yIndex = 0;
+//     int uvIndex = 0;
+//     for (int i = 0; i < height; i++) {
+//       for (int j = 0; j < width; j++) {
+//         int y = yPlane.bytes[yIndex++];
+//         int u = uPlane.bytes[uvIndex];
+//         int v = vPlane.bytes[uvIndex++];
+
+//         // YUV to RGB conversion (ITU-R BT.601)
+//         int r = (y + 1.402 * (v - 128)).toInt();
+//         int g = (y - 0.344136 * (u - 128) - 0.714136 * (v - 128)).toInt();
+//         int b = (y + 1.772 * (u - 128)).toInt();
+
+//         // Ограничиваем значения R, G, B в допустимом диапазоне
+//         r = r.clamp(0, 255);
+//         g = g.clamp(0, 255);
+//         b = b.clamp(0, 255);
+
+//         // Устанавливаем пиксель в изображении
+//         image.setPixel(j, i, img.getColor(r, g, b));
+//       }
+//     }
+
+//     // Преобразуем изображение в JPEG
+//     List<int> jpegBytes = img.encodeJpg(image);
+//     return Uint8List.fromList(jpegBytes);
+//   } catch (e) {
+//     print("Ошибка конвертации YUV в JPEG: $e");
+//     rethrow;
+//   }
+// }
+
+
+Future<Uint8List> _convertYUV420ToJPEG(CameraImage image, {int targetWidth = 480, int targetHeight = 720}) async {
+  final int width = image.width;
+  final int height = image.height;
+
+  // Создаем изображение из YUV420
+  final img.Image convertedImage = img.Image(width, height);
+
+  final int uvPixelStride = image.planes[1].bytesPerPixel!;
+
+  final Uint8List yPlane = image.planes[0].bytes;
+  final Uint8List uPlane = image.planes[1].bytes;
+  final Uint8List vPlane = image.planes[2].bytes;
+
+  int yIndex = 0;
+  int uvIndex = 0;
+  for (int y = 0; y < height; y++) {
+    for (int x = 0; x < width; x++) {
+      final int yValue = yPlane[yIndex++] & 0xFF;
+      final int uvOffset = uvIndex ~/ uvPixelStride;
+      final int uValue = uPlane[uvOffset] & 0xFF;
+      final int vValue = vPlane[uvOffset] & 0xFF;
+
+      convertedImage.setPixelRgba(x, y, yValue, uValue, vValue);
+      if (x % 2 == 1) uvIndex++;
     }
   }
+
+  // Изменяем размер изображения до targetWidth x targetHeight
+  final img.Image resizedImage = img.copyResize(convertedImage, width: targetWidth, height: targetHeight);
+
+  // Конвертируем изображение в JPEG
+  return Uint8List.fromList(img.encodeJpg(resizedImage));
+}
+
+
+
+// ниже вряд ли ошибка
+//   void _stopVideoStream() async {
+//     if (_cameraController.value.isStreamingImages) {
+//       await _cameraController.stopImageStream();
+//     }
+//   }
 
   @override
   void dispose() {
@@ -744,36 +942,50 @@ Widget build(BuildContext context) {
             ),
 
             Expanded(
-              child: FutureBuilder<void>(
-                future: _initializeCameraFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.done) {
-                    if (snapshot.hasError) {
-                      return Center(
-                        child: Text("Camera error: ${snapshot.error}"),
-                      );
-                    }
-                    return _isWorkoutStarted
-                        ? (_processedImage == null
-                            ? CameraPreview(_cameraController)
-                            : Image.memory(_processedImage!))
-                        : Container(
-                            color: Colors.grey[300],
-                            child: Center(
-                              child: Text(
-                                startVideo,
-                                style: TextStyle(
-                                  color: Colors.grey[700],
-                                  fontSize: 16,
-                                ),
-                              ),
-                            ),
-                          );
-                  } else {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                },
-              ),
+              // child: FutureBuilder<void>(
+              //   future: _imageOutputFuture,
+              //   builder: (context, snapshot) {
+              //     if (snapshot.connectionState == ConnectionState.done) {
+              //       if (snapshot.hasError) {
+              //         return Center(
+              //           child: Text("Camera error: ${snapshot.error}"),
+              //         );
+              //       }
+              //       return _isWorkoutStarted
+              //           ? (Image.memory(_processedImage!))
+              //           : Container(
+              //               color: Colors.grey[300],
+              //               child: Center(
+              //                 child: Text(
+              //                   startVideo,
+              //                   style: TextStyle(
+              //                     color: Colors.grey[700],
+              //                     fontSize: 16,
+              //                   ),
+              //                 ),
+              //               ),
+              //             );
+              //     } else {
+              //       return const Center(child: CircularProgressIndicator());
+              //     }
+              //   },
+              // ),
+              child: _isWorkoutStarted
+                  ? (_receivedFrames.isNotEmpty
+                      ? Image.memory(_receivedFrames.last, fit: BoxFit.cover)
+                      : Center(child: Text("Ожидание видео...")))
+                  : Container(
+                      color: Colors.grey[300],
+                      child: Center(
+                        child: Text(
+                          startVideo,
+                          style: TextStyle(
+                            color: Colors.grey[700],
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    ),
             ),
 
             Padding(
