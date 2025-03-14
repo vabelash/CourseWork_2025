@@ -426,7 +426,7 @@ class _SecondRouteState extends State<SecondRoute> {
 
       _cameraController = CameraController(
         frontCamera,
-        fps: 15,
+        fps: 30,
         ResolutionPreset.medium,
         enableAudio: false,
       );
@@ -466,7 +466,7 @@ class _SecondRouteState extends State<SecondRoute> {
         _isWorkoutStarted = !_isWorkoutStarted;
       });
       if (_isWorkoutStarted) {
-        uniqueId = "2025"; //uuid.v4();
+        uniqueId = uuid.v4();
         _startVideoStream();
       } else {
         _stopVideoStream();
@@ -474,29 +474,6 @@ class _SecondRouteState extends State<SecondRoute> {
       }
 }
 
-  // void _startVideoStream() async {
-  //   if (!_cameraController.value.isStreamingImages) {
-  //     await _cameraController.startImageStream((CameraImage img) {
-  //       // Обработка видеопотока
-  //     });
-  //   }
-  // }
-
-
-// void _startVideoStream() async {
-//   if (!_cameraController.value.isStreamingImages) {
-//     await _cameraController.startImageStream((CameraImage img) async {
-//       if (!_isProcessing) { // Чтобы не перегружать сервер, ждем ответа
-//         _isProcessing = true;
-//         final resizedImage = await _resizeImage(img, 720, 480);
-//           await _sendFrame(resizedImage);
-//         _isProcessing = false;
-//       }
-//     });
-//   }
-// }
-
-Timer? _frameTimer; // Таймер для отправки кадров
 bool _isProcessing = false; // Флаг для отслеживания обработки кадра
 
 
@@ -528,33 +505,6 @@ void _stopVideoStream() async {
   if (_cameraController.value.isStreamingImages) {
     await _cameraController.stopImageStream();
   }
-  _frameTimer?.cancel(); // Останавливаем таймер
-  _frameTimer = null; // Сбрасываем таймер
-}
-
-Future<Uint8List> _resizeImage(CameraImage cameraImage, int targetWidth, int targetHeight) async {
-  if (cameraImage.planes.isEmpty) {
-    throw Exception("CameraImage planes are empty.");
-  }
-
-  // Проверка размера изображения
-  if (cameraImage.width <= 0 || cameraImage.height <= 0) {
-    throw Exception("Invalid image dimensions.");
-  }
-
-  // Преобразуем CameraImage в изображение
-  final image = img.Image.fromBytes(
-    cameraImage.width,
-    cameraImage.height,
-    cameraImage.planes[0].bytes,
-    format: img.Format.rgba, // Используем rgba вместо bgra
-  );
-
-  // Изменяем размер изображения
-  final resizedImage = img.copyResize(image, width: targetWidth, height: targetHeight);
-
-  // Конвертируем изображение в JPEG
-  return Uint8List.fromList(img.encodeJpg(resizedImage));
 }
 
 List<Uint8List> _receivedFrames = [];
@@ -632,7 +582,7 @@ List<Uint8List> _receivedFrames = [];
 Future<void> _sendFrame(CameraImage img) async {
   try {
     // Преобразуем изображение из CameraImage в байты JPEG
-    Uint8List imageBytes = await _convertYUV420ToJPEG(img);
+    Uint8List imageBytes = await _convertYUV420ToJPEG(img); //_convertYUV420ToJPEG
 
     var request = http.MultipartRequest(
       'POST', 
@@ -648,15 +598,16 @@ Future<void> _sendFrame(CameraImage img) async {
       Uint8List responseBytes = await response.stream.toBytes();
 
       // Получаем количество повторений из заголовка
-     // String repsCountHeader = response.headers['reps-count'] ?? '0';
-      //int repsCount = int.parse(repsCountHeader);
+      String repsCountHeader = response.headers['reps-count'] ?? '0';
+      log("Проверка парсинга: $repsCountHeader");
+      int repsCount = int.parse(repsCountHeader[1]);
 
       setState(() {
         _receivedFrames.add(responseBytes); // Добавляем изображение в список
         if (_receivedFrames.length > 10) {
           _receivedFrames.removeAt(0); // Ограничиваем список до 10 кадров
         }
-        //_repsCount = repsCount; // Обновляем число повторений
+        _repsCount = repsCount; // Обновляем число повторений
       });
 
       log("Кадров в списке: ${_receivedFrames.length}, Повторений: $_repsCount");
@@ -719,30 +670,37 @@ Future<void> _sendFrame(CameraImage img) async {
 // }
 
 
-Future<Uint8List> _convertYUV420ToJPEG(CameraImage image, {int targetWidth = 480, int targetHeight = 720}) async {
+Future<Uint8List> _convertYUV420ToJPEG(CameraImage image, {int targetWidth = 720, int targetHeight = 480}) async {
   final int width = image.width;
   final int height = image.height;
 
   // Создаем изображение из YUV420
   final img.Image convertedImage = img.Image(width, height);
 
-  final int uvPixelStride = image.planes[1].bytesPerPixel!;
-
   final Uint8List yPlane = image.planes[0].bytes;
   final Uint8List uPlane = image.planes[1].bytes;
   final Uint8List vPlane = image.planes[2].bytes;
 
-  int yIndex = 0;
-  int uvIndex = 0;
+  final int uvPixelStride = image.planes[1].bytesPerPixel!;
+  final int uvRowStride = image.planes[1].bytesPerRow;
+
   for (int y = 0; y < height; y++) {
     for (int x = 0; x < width; x++) {
-      final int yValue = yPlane[yIndex++] & 0xFF;
-      final int uvOffset = uvIndex ~/ uvPixelStride;
-      final int uValue = uPlane[uvOffset] & 0xFF;
-      final int vValue = vPlane[uvOffset] & 0xFF;
+      final int yValue = yPlane[y * width + x] & 0xFF;
 
-      convertedImage.setPixelRgba(x, y, yValue, uValue, vValue);
-      if (x % 2 == 1) uvIndex++;
+      final int uvX = x ~/ 2;
+      final int uvY = y ~/ 2;
+      final int uvIndex = uvY * uvRowStride + uvX * uvPixelStride;
+
+      final int uValue = uPlane[uvIndex] & 0xFF;
+      final int vValue = vPlane[uvIndex] & 0xFF;
+
+      // Преобразование YUV в RGB
+      final int r = (yValue + 1.402 * (vValue - 128)).clamp(0, 255).toInt();
+      final int g = (yValue - 0.344136 * (uValue - 128) - 0.714136 * (vValue - 128)).clamp(0, 255).toInt();
+      final int b = (yValue + 1.772 * (uValue - 128)).clamp(0, 255).toInt();
+
+      convertedImage.setPixelRgba(x, y, r, g, b);
     }
   }
 
@@ -752,6 +710,41 @@ Future<Uint8List> _convertYUV420ToJPEG(CameraImage image, {int targetWidth = 480
   // Конвертируем изображение в JPEG
   return Uint8List.fromList(img.encodeJpg(resizedImage));
 }
+
+
+// Future<Uint8List> _convertYUV420ToJPEG(CameraImage image, {int targetWidth = 480, int targetHeight = 720}) async {
+//   final int width = image.width;
+//   final int height = image.height;
+
+//   // Создаем изображение из YUV420
+//   final img.Image convertedImage = img.Image(width, height);
+
+//   final int uvPixelStride = image.planes[1].bytesPerPixel!;
+
+//   final Uint8List yPlane = image.planes[0].bytes;
+//   final Uint8List uPlane = image.planes[1].bytes;
+//   final Uint8List vPlane = image.planes[2].bytes;
+
+//   int yIndex = 0;
+//   int uvIndex = 0;
+//   for (int y = 0; y < height; y++) {
+//     for (int x = 0; x < width; x++) {
+//       final int yValue = yPlane[yIndex++] & 0xFF;
+//       final int uvOffset = uvIndex ~/ uvPixelStride;
+//       final int uValue = uPlane[uvOffset] & 0xFF;
+//       final int vValue = vPlane[uvOffset] & 0xFF;
+
+//       convertedImage.setPixelRgba(x, y, yValue, uValue, vValue);
+//       if (x % 2 == 1) uvIndex++;
+//     }
+//   }
+
+//   // Изменяем размер изображения до targetWidth x targetHeight
+//   final img.Image resizedImage = img.copyResize(convertedImage, width: targetWidth, height: targetHeight);
+
+//   // Конвертируем изображение в JPEG
+//   return Uint8List.fromList(img.encodeJpg(resizedImage));
+// }
 
 
 
