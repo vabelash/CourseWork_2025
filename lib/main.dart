@@ -395,11 +395,15 @@ class _SecondRouteState extends State<SecondRoute> {
 
   late List<String> _exercises;
   String _exercise = 'Pushups';
+  String _kpts = '5,7,9';
   bool _isWorkoutStarted = false;
 
   int _repsCount = 0;
   var uuid = Uuid();
   late String uniqueId;
+
+
+  List<Uint8List> _receivedFrames = [];
 
   late CameraController _cameraController;
   late Future<void> _initializeCameraFuture;
@@ -454,6 +458,16 @@ class _SecondRouteState extends State<SecondRoute> {
       } else {
         _exercise = _exercises.first;
       }
+
+      if (_exercise == appLocalizations.squats) {
+      _kpts = "5,7,9";
+    } else if (_exercise == appLocalizations.pushups) {
+      _kpts = "5,11,13";
+    } else if (_exercise == appLocalizations.legpress) {
+      _kpts = "11,13,15";
+    } else {
+      _kpts = "5,7,9"; // Значение по умолчанию
+    }
     });
   }
 
@@ -467,6 +481,8 @@ class _SecondRouteState extends State<SecondRoute> {
       });
       if (_isWorkoutStarted) {
         uniqueId = uuid.v4();
+        log("$uniqueId");
+
         _startVideoStream();
       } else {
         _stopVideoStream();
@@ -482,7 +498,7 @@ void _startVideoStream() async {
   if (!_cameraController.value.isStreamingImages) {
     await _cameraController.startImageStream((CameraImage img) async {
       countFrames++;
-      if (!_isProcessing && countFrames % 5 == 0) {
+      if (!_isProcessing && countFrames % 3 == 0) {
         _isProcessing = true;
 
         try {
@@ -507,7 +523,7 @@ void _stopVideoStream() async {
   }
 }
 
-List<Uint8List> _receivedFrames = [];
+
 // Future<void> _sendFrame(CameraImage img) async {
 //   try {
 //     // Конвертируем CameraImage в байты
@@ -589,7 +605,10 @@ Future<void> _sendFrame(CameraImage img) async {
       Uri.parse("http://172.27.27.254:8001/process_frame/")
     )
       ..files.add(http.MultipartFile.fromBytes('file', imageBytes, filename: "frame.jpg"))
-      ..fields['session_id'] = uniqueId;
+      ..fields['session_id'] = uniqueId
+      ..fields['kpts'] = _kpts;
+      log("Проверка сессии: $uniqueId");
+      log("Проверка точек: $_kpts");
 
     var response = await request.send();
 
@@ -607,7 +626,14 @@ Future<void> _sendFrame(CameraImage img) async {
         if (_receivedFrames.length > 10) {
           _receivedFrames.removeAt(0); // Ограничиваем список до 10 кадров
         }
-        _repsCount = repsCount; // Обновляем число повторений
+        if (_isWorkoutStarted)
+        {
+          _repsCount = repsCount; // Обновляем число повторений
+        }
+        else 
+        {
+          _repsCount = 0;
+        }
       });
 
       log("Кадров в списке: ${_receivedFrames.length}, Повторений: $_repsCount");
@@ -965,7 +991,7 @@ Widget build(BuildContext context) {
               // ),
               child: _isWorkoutStarted
                   ? (_receivedFrames.isNotEmpty
-                      ? Image.memory(_receivedFrames.last, fit: BoxFit.cover)
+                      ? Image.memory(_receivedFrames.last, fit: BoxFit.cover,  gaplessPlayback: true)
                       : Center(child: Text("Ожидание видео...")))
                   : Container(
                       color: Colors.grey[300],
