@@ -73,7 +73,7 @@ flutter:
   assets:
     - assets\trainHelpPdf.pdf
     - assets\trainHelpVideo.mp4
-    - assets\trainGif.gif
+    - assets\realGif.gif
     - assets\posenet.tflite
 
   # An image asset can refer to one or more resolution-specific "variants", see

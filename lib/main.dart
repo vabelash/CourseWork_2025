@@ -217,15 +217,15 @@ class FirstRoute extends StatelessWidget {
               const SizedBox(height: 10),
               GestureDetector(
                 onTap: () async {
-                  await Clipboard.setData(ClipboardData(text: "vabelash@edu.hse.ru"));
+                  await Clipboard.setData(ClipboardData(text: "SmartWorkoutTracking@mail.ru"));
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('$emailCopy: vabelash@edu.hse.ru')),
+                      SnackBar(content: Text('$emailCopy: SmartWorkoutTracking@mail.ru')),
                     );
                   }
                   final Uri emailUri = Uri(
                     scheme: 'mailto',
-                    path: "vabelash@edu.hse.ru",
+                    path: "SmartWorkoutTracking@mail.ru",
                   );
                   if (await canLaunchUrl(emailUri)) {
                     await launchUrl(emailUri);
@@ -238,11 +238,11 @@ class FirstRoute extends StatelessWidget {
                   }
                 },
                 child: Text(
-                  "vabelash@edu.hse.ru",
+                  "SmartWorkoutTracking@mail.ru",
                   style: const TextStyle(
                     color: Colors.blue,
                     decoration: TextDecoration.underline,
-                    fontSize: 18,
+                    fontSize: 14,
                   ),
                 ),
               ),
@@ -271,10 +271,10 @@ class FirstRoute extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               SizedBox(
-                width: 300,
-                height: 200,
+                width: 150,
+                height: 300,
                 child: Image.asset(
-                  'assets/trainGif.gif',
+                  'assets/realGif.gif',
                   fit: BoxFit.cover,
                 ),
               ),
@@ -457,9 +457,9 @@ class _SecondRouteState extends State<SecondRoute> {
       }
 
       if (_exercise == appLocalizations.squats) {
-      _kpts = "5,7,9";
-    } else if (_exercise == appLocalizations.pushups) {
       _kpts = "5,11,13";
+    } else if (_exercise == appLocalizations.pushups) {
+      _kpts = "5,7,9";
     } else if (_exercise == appLocalizations.legpress) {
       _kpts = "11,13,15";
     } else {
